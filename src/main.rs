@@ -1,4 +1,4 @@
-use rs_embl::{CodingSequence, Getter, VEPAnalysis};
+use rs_embl::{sequence::CodingSequence, vep::VEPAnalysis, Getter};
 #[tokio::main]
 async fn main() {
     let v = Getter::<VEPAnalysis>::new();
@@ -9,7 +9,7 @@ async fn main() {
             tokio::spawn(async move { v.get(id.to_string()).await })
         })
         .collect();
-
+    drop(v);
     let v2 = Getter::<CodingSequence>::new();
     let handles2: Vec<_> = ["ENST00000237014", "ENSE00003556666"]
         .iter()
@@ -18,6 +18,7 @@ async fn main() {
             tokio::spawn(async move { v.get(id.to_string()).await })
         })
         .collect();
+    drop(v2);
     for h in handles.into_iter() {
         let vep: Option<VEPAnalysis> = h.await.unwrap();
         println!("{:#?}", vep.unwrap());
