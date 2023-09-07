@@ -1,4 +1,4 @@
-//! Structures for theSequence endpoint of the Ensembl API.
+//! Structures for the Sequence endpoint of the Ensembl API.
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]

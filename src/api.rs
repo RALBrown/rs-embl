@@ -8,7 +8,7 @@ pub const WAIT_DELAY: Duration = Duration::from_millis(500);
 const ENSEMBL_SERVER: &str = r#"https://rest.ensembl.org"#;
 /// Encapsulates Ensembl REST API calls to allow multiple entries to be condensed into a single POST request.
 ///  * This will spawn a new asyncronous task that will periodically poll for new requests and handle them.
-///  * The task will abort when the Getter object is dropped.
+///  * The task will abort when the [Getter] object is dropped.
 /// ```
 /// # tokio::runtime::Builder::new_current_thread()
 /// #       .enable_all()
