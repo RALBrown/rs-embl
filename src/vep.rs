@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VEPAnalysis {
     pub input: String,
     pub strand: i8,
@@ -14,7 +14,7 @@ pub struct VEPAnalysis {
     pub transcript_consequences: Vec<TranscriptConsequence>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct TranscriptConsequence {
     pub transcript_id: String,
     pub impact: String,
@@ -23,12 +23,12 @@ pub struct TranscriptConsequence {
     pub biotype: String,
     pub consequence_terms: Vec<String>,
     #[serde(default)]
-    pub canonical: Canonical,
+    pub canonical: crate::Canonical,
     pub nmd: Option<String>,
     #[serde(flatten)]
     pub protein_consequences: Option<ProteinConsequence>,
 }
-#[derive(Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct ProteinConsequence {
     pub hgvsp: String,
     pub hgvsc: String,
@@ -50,25 +50,5 @@ impl crate::EnsemblPostEndpoint for VEPAnalysis {
     }
     fn input(&self) -> &str {
         &self.input
-    }
-}
-
-#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Hash, Serialize, Deserialize)]
-#[serde(from = "i32")]
-pub enum Canonical {
-    CANONICAL,
-    NONCANONICAL,
-}
-impl Default for Canonical {
-    fn default() -> Self {
-        Self::NONCANONICAL
-    }
-}
-impl From<i32> for Canonical {
-    fn from(value: i32) -> Self {
-        match value {
-            0 => Self::NONCANONICAL,
-            _ => Self::CANONICAL,
-        }
     }
 }

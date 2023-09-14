@@ -1,4 +1,4 @@
-use rs_embl::{sequence::CodingSequence, vep::VEPAnalysis, Getter};
+use rs_embl::{sequence::CdnaSequence, vep::VEPAnalysis, Getter};
 #[tokio::main]
 async fn main() {
     let v = Getter::<VEPAnalysis>::new();
@@ -10,7 +10,7 @@ async fn main() {
         })
         .collect();
     drop(v);
-    let v2 = Getter::<CodingSequence>::new();
+    let v2 = Getter::<CdnaSequence>::new();
     let handles2: Vec<_> = ["ENST00000237014", "ENSE00003556666"]
         .iter()
         .map(|id| {
