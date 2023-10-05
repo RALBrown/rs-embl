@@ -1,9 +1,10 @@
 use anyhow::Result;
-use rs_embl::{transcript::Transcript, vep::VEPAnalysis, Getter};
+use rs_embl::{sequence::GenomicSequence, transcript::Transcript, vep::VEPAnalysis, Getter};
 #[tokio::main]
 async fn main() -> Result<()> {
     let vep_getter = Getter::<VEPAnalysis>::new();
     let transcript_getter = Getter::<Transcript>::new();
+    let sequence_getter = Getter::<GenomicSequence>::new();
     let handles = ["18:g.31592974G>A"]
         .iter()
         .map(|id| {
@@ -30,7 +31,19 @@ async fn main() -> Result<()> {
         println!("{:#?}", vep);
         for tc in tcs {
             let Some(tc) = tc.await.unwrap() else {continue};
-            println!("{:#?}", tc)
+            println!("{:#?}", tc);
+            let genomic_seq = tc.genomic_sequence(sequence_getter.client()).await;
+            let exons = genomic_seq.exons();
+            println!("{:#?}", exons);
+            let exon1 = exons.into_iter().next();
+            let output = match exon1 {
+                Some(s) => {
+                    let Some(t) = tc.translation else {continue};
+                    &(s.get((t.start - tc.start) as usize..).unwrap_or(""))
+                }
+                None => "",
+            };
+            println!("{}", output);
         }
     }
 

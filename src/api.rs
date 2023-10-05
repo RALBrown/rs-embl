@@ -128,20 +128,22 @@ pub struct Client<'a, T: EnsemblPostEndpoint + Send + DeserializeOwned> {
     tx: mpsc::Sender<(String, tokio::sync::oneshot::Sender<T>)>,
     getter: std::marker::PhantomData<&'a Getter<T>>,
 }
-impl<'a, T: EnsemblPostEndpoint + Send + DeserializeOwned> Client<'a, T> {
+impl<'a, T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Client<'a, T> {
     /// Get the Ensembl response for the given identifier.
     /// Under the hood, this request will be bundled with other requests then returned asyncronously.
     /// # Panics
     ///
     /// Panics if the [Getter] has dropped, or the undelying channel has closed.
-    pub async fn get(&self, id: String) -> Option<T> {
+    pub async fn get(self, id: String) -> Option<T> {
         let (tx, rx) = tokio::sync::oneshot::channel();
-        if let Err(err) = self.tx.send((id, tx)).await {
-            panic!(
-                "Getter was closed or dropped recieving request: {}",
-                err.0 .0
-            )
-        } // If the channel has closed, we can ignore the result
+        tokio::spawn(async move {
+            if let Err(err) = self.tx.send((id, tx)).await {
+                panic!(
+                    "Getter was closed or dropped recieving request: {}",
+                    err.0 .0
+                )
+            }
+        }); // If the channel has closed, we can ignore the result
         rx.await.ok()
     }
 }
