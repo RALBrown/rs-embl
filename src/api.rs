@@ -40,11 +40,7 @@ pub struct Getter<T: EnsemblPostEndpoint + Send + DeserializeOwned> {
     //is_alive: Arc<AtomicBool>,
     tx: mpsc::Sender<(String, tokio::sync::oneshot::Sender<T>)>,
 }
-// impl<T: EnsemblPostEndpoint + Send + DeserializeOwned> Drop for Getter<T> {
-//     fn drop(&mut self) {
-//         self.is_alive.store(false, Ordering::Relaxed);
-//     }
-// }
+
 impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Default for Getter<T> {
     fn default() -> Self {
         Self::new()
@@ -102,7 +98,11 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
         let outputs: Vec<T> = if let Ok(outputs) = serde_json::from_str(&values) {
             outputs
         } else {
-            panic!("Failed to parse the following response: {}", values)
+            if let Ok(outputs) = serde_json::from_str::<HashMap<String, T>>(&values) {
+                outputs.into_values().collect()
+            } else {
+                panic!("Failed to parse the following response: {}", values);
+            }
         };
         for output in outputs.into_iter() {
             let target = input.remove(output.input()).unwrap();
@@ -128,20 +128,22 @@ pub struct Client<'a, T: EnsemblPostEndpoint + Send + DeserializeOwned> {
     tx: mpsc::Sender<(String, tokio::sync::oneshot::Sender<T>)>,
     getter: std::marker::PhantomData<&'a Getter<T>>,
 }
-impl<'a, T: EnsemblPostEndpoint + Send + DeserializeOwned> Client<'a, T> {
+impl<'a, T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Client<'a, T> {
     /// Get the Ensembl response for the given identifier.
     /// Under the hood, this request will be bundled with other requests then returned asyncronously.
     /// # Panics
     ///
     /// Panics if the [Getter] has dropped, or the undelying channel has closed.
-    pub async fn get(&self, id: String) -> Option<T> {
+    pub async fn get(self, id: String) -> Option<T> {
         let (tx, rx) = tokio::sync::oneshot::channel();
-        if let Err(err) = self.tx.send((id, tx)).await {
-            panic!(
-                "Getter was closed or dropped recieving request: {}",
-                err.0 .0
-            )
-        } // If the channel has closed, we can ignore the result
+        tokio::spawn(async move {
+            if let Err(err) = self.tx.send((id, tx)).await {
+                panic!(
+                    "Getter was closed or dropped recieving request: {}",
+                    err.0 .0
+                )
+            }
+        }); // If the channel has closed, we can ignore the result
         rx.await.ok()
     }
 }

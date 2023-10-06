@@ -27,5 +27,8 @@
 //! ```
 mod api;
 pub use api::*;
+mod descriptors;
 pub mod sequence;
+pub mod transcript;
 pub mod vep;
+pub use descriptors::*;
