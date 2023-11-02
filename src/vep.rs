@@ -10,6 +10,7 @@ pub struct VEPAnalysis {
     pub seq_region_name: String,
     pub most_severe_consequence: String,
     pub start: u32,
+    pub end: u32,
     pub allele_string: String,
     pub transcript_consequences: Vec<TranscriptConsequence>,
 }
