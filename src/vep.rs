@@ -27,7 +27,10 @@ pub struct TranscriptConsequence {
     pub nmd: Option<String>,
     #[serde(flatten)]
     pub protein_consequences: Option<ProteinConsequence>,
+    pub cdna_start: Option<u32>,
+    pub cdna_end: Option<u32>,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct ProteinConsequence {
     pub hgvsp: String,
@@ -37,8 +40,6 @@ pub struct ProteinConsequence {
     pub codons: String,
     pub exon: String,
     pub amino_acids: String,
-    pub cdna_start: u32,
-    pub cdna_end: u32,
 }
 
 impl crate::EnsemblPostEndpoint for VEPAnalysis {

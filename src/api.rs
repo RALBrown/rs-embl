@@ -58,7 +58,9 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
                 loop {
                     sleep(WAIT_DELAY).await;
                     let mut gets = HashMap::new();
-                    let Some((key, value)) = rx.recv().await else { break };
+                    let Some((key, value)) = rx.recv().await else {
+                        break;
+                    };
                     gets.insert(key, value);
                     while let Ok((k, v)) = rx.try_recv() {
                         gets.insert(k, v);
