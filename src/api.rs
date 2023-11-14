@@ -7,7 +7,7 @@ use tokio::time::{sleep, Duration};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::spawn;
 #[cfg(target_arch = "wasm32")]
-use tokio::task::spawn_blocking as spawn;
+use tokio::task::spawn;
 
 /// The minimum time between post operations.
 pub const WAIT_DELAY: Duration = Duration::from_millis(500);
