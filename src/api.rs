@@ -1,7 +1,13 @@
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
+
 use tokio::sync::mpsc;
 use tokio::time::{sleep, Duration};
+
+#[cfg(not(target_arch = "wasm32"))]
+use tokio::spawn;
+#[cfg(target_arch = "wasm32")]
+use tokio::task::spawn;
 
 /// The minimum time between post operations.
 pub const WAIT_DELAY: Duration = Duration::from_millis(500);
@@ -50,33 +56,45 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
     /// Create a new Getter object to return T from Enseble REST endpoint.
     pub fn new() -> Self {
         let (tx, mut rx) = mpsc::channel::<(String, tokio::sync::oneshot::Sender<T>)>(500);
-        //let is_alive = Arc::new(AtomicBool::new(true));
-        let client = reqwest::Client::new();
+
         {
-            //let is_alive = Arc::clone(&is_alive);
-            tokio::spawn(async move {
-                loop {
-                    sleep(WAIT_DELAY).await;
+            #[cfg(not(target_arch = "wasm32"))]
+            let client = reqwest::Client::new();
+            {
+                spawn(async move {
+                    loop {
+                        sleep(WAIT_DELAY).await;
+                        let mut gets = HashMap::new();
+                        let Some((key, value)) = rx.recv().await else {
+                            break;
+                        };
+                        gets.insert(key, value);
+                        while let Ok((k, v)) = rx.try_recv() {
+                            gets.insert(k, v);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        Self::process(gets, &client).await;
+                        #[cfg(target_arch = "wasm32")]
+                        Self::process(gets).await;
+                    }
+                    rx.close();
                     let mut gets = HashMap::new();
-                    let Some((key, value)) = rx.recv().await else {
-                        break;
-                    };
-                    gets.insert(key, value);
-                    while let Ok((k, v)) = rx.try_recv() {
+                    while let Some((k, v)) = rx.recv().await {
                         gets.insert(k, v);
                     }
+                    #[cfg(not(target_arch = "wasm32"))]
                     Self::process(gets, &client).await;
-                }
-                rx.close();
-                let mut gets = HashMap::new();
-                while let Some((k, v)) = rx.recv().await {
-                    gets.insert(k, v);
-                }
-                Self::process(gets, &client).await;
-            });
+                    #[cfg(target_arch = "wasm32")]
+                    Self::process(gets).await;
+                });
+            }
         }
+        #[cfg(not(target_arch = "wasm32"))]
+        {}
         Self { tx }
     }
+
+    #[cfg(not(target_arch = "wasm32"))]
     async fn process(
         mut input: HashMap<String, tokio::sync::oneshot::Sender<T>>,
         client: &reqwest::Client,
@@ -97,6 +115,43 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
             .text()
             .await
             .unwrap();
+        let outputs: Vec<T> = if let Ok(outputs) = serde_json::from_str(&values) {
+            outputs
+        } else {
+            if let Ok(outputs) = serde_json::from_str::<HashMap<String, T>>(&values) {
+                outputs.into_values().collect()
+            } else {
+                panic!("Failed to parse the following response: {}", values);
+            }
+        };
+        for output in outputs.into_iter() {
+            let target = input.remove(output.input()).unwrap();
+            let _ = target.send(output); //if the sender's not listening that's it's problem
+        }
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    async fn process(mut input: HashMap<String, tokio::sync::oneshot::Sender<T>>) {
+        if input.is_empty() {
+            return;
+        }
+        let ids: Vec<&str> = input.keys().map(|s| s.as_str()).collect();
+        let payload = T::payload_template().replace(r"{ids}", &json::stringify(ids));
+        let request = ehttp::Request {
+            headers: ehttp::headers(&[
+                ("Content-Type", "application/json"),
+                ("Accept", "application/json"),
+            ]),
+            ..ehttp::Request::post(
+                String::from(ENSEMBL_SERVER) + T::extension(),
+                payload.into(),
+            )
+        };
+        let (tx, resp) = tokio::sync::oneshot::channel();
+        ehttp::fetch(request, move |result| {
+            tx.send(result.unwrap().text().unwrap().to_owned());
+        });
+        let values = resp.await.unwrap();
         let outputs: Vec<T> = if let Ok(outputs) = serde_json::from_str(&values) {
             outputs
         } else {
