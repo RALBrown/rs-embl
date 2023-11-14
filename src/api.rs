@@ -89,8 +89,6 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
                 });
             }
         }
-        #[cfg(not(target_arch = "wasm32"))]
-        {}
         Self { tx }
     }
 
@@ -165,6 +163,7 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
             let target = input.remove(output.input()).unwrap();
             let _ = target.send(output); //if the sender's not listening that's it's problem
         }
+        tokio::task::yield_now();
     }
 }
 impl<'a, T: 'a + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
