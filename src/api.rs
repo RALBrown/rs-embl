@@ -7,7 +7,7 @@ use tokio::time::{sleep, Duration};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::spawn;
 #[cfg(target_arch = "wasm32")]
-use tokio::task::spawn;
+use tokio::task::spawn_blocking as spawn;
 
 /// The minimum time between post operations.
 pub const WAIT_DELAY: Duration = Duration::from_millis(500);
@@ -163,7 +163,6 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
             let target = input.remove(output.input()).unwrap();
             let _ = target.send(output); //if the sender's not listening that's it's problem
         }
-        tokio::task::yield_now();
     }
 }
 impl<'a, T: 'a + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
