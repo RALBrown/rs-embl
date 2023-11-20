@@ -4,10 +4,7 @@ use std::collections::HashMap;
 use tokio::sync::mpsc;
 use tokio::time::{sleep, Duration};
 
-#[cfg(not(target_arch = "wasm32"))]
 use tokio::spawn;
-#[cfg(target_arch = "wasm32")]
-use tokio::task::spawn;
 
 /// The minimum time between post operations.
 pub const WAIT_DELAY: Duration = Duration::from_millis(500);
@@ -41,6 +38,7 @@ const ENSEMBL_SERVER: &str = r#"https://rest.ensembl.org"#;
 /// }
 /// # });
 /// ```
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug)]
 pub struct Getter<T: EnsemblPostEndpoint + Send + DeserializeOwned> {
     //is_alive: Arc<AtomicBool>,
@@ -52,11 +50,11 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Default for Get
         Self::new()
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
     /// Create a new Getter object to return T from Enseble REST endpoint.
     pub fn new() -> Self {
         let (tx, mut rx) = mpsc::channel::<(String, tokio::sync::oneshot::Sender<T>)>(500);
-
         {
             #[cfg(not(target_arch = "wasm32"))]
             let client = reqwest::Client::new();
@@ -92,7 +90,6 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
         Self { tx }
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
     async fn process(
         mut input: HashMap<String, tokio::sync::oneshot::Sender<T>>,
         client: &reqwest::Client,
@@ -191,14 +188,12 @@ impl<'a, T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Client<'a, 
     /// Panics if the [Getter] has dropped, or the undelying channel has closed.
     pub async fn get(self, id: String) -> Option<T> {
         let (tx, rx) = tokio::sync::oneshot::channel();
-        tokio::spawn(async move {
-            if let Err(err) = self.tx.send((id, tx)).await {
-                panic!(
-                    "Getter was closed or dropped recieving request: {}",
-                    err.0 .0
-                )
-            }
-        }); // If the channel has closed, we can ignore the result
+        if let Err(err) = self.tx.send((id, tx)).await {
+            panic!(
+                "Getter was closed or dropped recieving request: {}",
+                err.0 .0
+            )
+        }; // If the channel has closed, we can ignore the result
         rx.await.ok()
     }
 }
@@ -213,4 +208,68 @@ pub trait EnsemblPostEndpoint {
     fn payload_template() -> &'static str;
     /// Get the input string from the Ensembl response. Will usually be &self.input
     fn input(&self) -> &str;
+}
+
+#[cfg(target_arch = "wasm32")]
+pub struct Getter<T: EnsemblPostEndpoint + DeserializeOwned> {
+    tx: mpsc::Sender<(String, tokio::sync::oneshot::Sender<T>)>,
+    rx: mpsc::Receiver<(String, tokio::sync::oneshot::Sender<T>)>,
+    last_fetch: std::time::Instant,
+    //to_fetch: HashMap<String, Sender<T>>,
+}
+#[cfg(target_arch = "wasm32")]
+impl<T: 'static + EnsemblPostEndpoint + DeserializeOwned> Getter<T> {
+    pub fn new() -> Self {
+        let (tx, rx) = mpsc::channel(500);
+        let last_fetch = std::time::Instant::now();
+        Self { tx, rx, last_fetch }
+    }
+
+    pub async fn process(&mut self) {
+        if (self.last_fetch.elapsed()) < WAIT_DELAY {
+            return;
+        }
+        self.last_fetch = std::time::Instant::now();
+        let mut input = HashMap::new();
+        let Some((key, value)) = self.rx.recv().await else {
+            return;
+        };
+        input.insert(key, value);
+        while let Ok((k, v)) = self.rx.try_recv() {
+            input.insert(k, v);
+        }
+        if input.is_empty() {
+            return;
+        }
+        let ids: Vec<&str> = input.keys().map(|s| s.as_str()).collect();
+        let payload = T::payload_template().replace(r"{ids}", &json::stringify(ids));
+        let request = ehttp::Request {
+            headers: ehttp::headers(&[
+                ("Content-Type", "application/json"),
+                ("Accept", "application/json"),
+            ]),
+            ..ehttp::Request::post(
+                String::from(ENSEMBL_SERVER) + T::extension(),
+                payload.into(),
+            )
+        };
+        let (tx, resp) = tokio::sync::oneshot::channel();
+        ehttp::fetch(request, move |result| {
+            tx.send(result.unwrap().text().unwrap().to_owned());
+        });
+        let values = resp.await.unwrap();
+        let outputs: Vec<T> = if let Ok(outputs) = serde_json::from_str(&values) {
+            outputs
+        } else {
+            if let Ok(outputs) = serde_json::from_str::<HashMap<String, T>>(&values) {
+                outputs.into_values().collect()
+            } else {
+                panic!("Failed to parse the following response: {}", values);
+            }
+        };
+        for output in outputs.into_iter() {
+            let target = input.remove(output.input()).unwrap();
+            let _ = target.send(output); //if the sender's not listening that's it's problem
+        }
+    }
 }
