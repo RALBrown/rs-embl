@@ -193,8 +193,13 @@ pub fn make_consequences(
 
     let mut protein_sequence = String::default();
     if let Some(translation) = &transcript.translation {
-        protein_sequence =
-            translate(&edited_sequence[(translation.start - transcript.start) as usize..]);
+        protein_sequence = translate(
+            &edited_sequence[if transcript.strand == 1 {
+                (translation.start - transcript.start) as usize
+            } else {
+                (transcript.end - translation.end) as usize
+            }..],
+        );
     }
     Consequences::Coding {
         genomic_sequence: edited_sequence,
