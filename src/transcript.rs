@@ -175,7 +175,7 @@ pub fn make_consequences(
         downstream = &seq.seq[(end - transcript.start) as usize..];
     } else {
         upstream = &seq.seq[..(transcript.end - end) as usize];
-        downstream = &seq.seq[(transcript.start - end) as usize..];
+        downstream = &seq.seq[(transcript.end - start) as usize..];
     }
     match (
         downstream.chars().next().unwrap().is_lowercase(),
