@@ -169,7 +169,7 @@ pub fn make_consequences(
 ) -> Consequences {
     let mut edited_sequence: String = String::default();
     let upstream = &seq.seq[..(start - transcript.start) as usize];
-    let downstream = &seq.seq[..(end - transcript.start) as usize];
+    let downstream = &seq.seq[(end - transcript.start) as usize..];
     match (
         downstream.chars().next().unwrap().is_lowercase(),
         upstream.chars().last().unwrap().is_lowercase(),

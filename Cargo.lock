@@ -671,7 +671,7 @@ dependencies = [
 
 [[package]]
 name = "rs-embl"
-version = "0.2.10"
+version = "0.2.11"
 dependencies = [
  "anyhow",
  "ehttp",
