@@ -168,8 +168,15 @@ pub fn make_consequences(
     variant_allele: &str,
 ) -> Consequences {
     let mut edited_sequence: String = String::default();
-    let upstream = &seq.seq[..(start - transcript.start) as usize];
-    let downstream = &seq.seq[(end - transcript.start) as usize..];
+    let upstream;
+    let downstream;
+    if transcript.strand == 1 {
+        upstream = &seq.seq[..(start - transcript.start) as usize];
+        downstream = &seq.seq[(end - transcript.start) as usize..];
+    } else {
+        upstream = &seq.seq[..(transcript.end - end) as usize];
+        downstream = &seq.seq[(transcript.start - end) as usize..];
+    }
     match (
         downstream.chars().next().unwrap().is_lowercase(),
         upstream.chars().last().unwrap().is_lowercase(),
@@ -186,13 +193,8 @@ pub fn make_consequences(
 
     let mut protein_sequence = String::default();
     if let Some(translation) = &transcript.translation {
-        protein_sequence = if transcript.strand == 1 {
-            translate(&edited_sequence[(translation.start - transcript.start) as usize..])
-        } else {
-            translate(&reverse_complement(
-                &edited_sequence[(transcript.end - translation.end) as usize..],
-            ))
-        }
+        protein_sequence =
+            translate(&edited_sequence[(translation.start - transcript.start) as usize..]);
     }
     Consequences::Coding {
         genomic_sequence: edited_sequence,
