@@ -189,6 +189,7 @@ pub fn make_consequences(
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub enum Consequences {
     DisruptedSpliceSite,
     Coding {
