@@ -117,6 +117,13 @@ pub fn translate(seq: &str) -> String {
     let mut output = String::new();
     for codon in seq
         .chars()
+        .map(|c| {
+            if c == 'T' {
+                return 'U';
+            } else {
+                return c;
+            }
+        })
         .filter(|c| c.is_uppercase())
         .collect::<Vec<char>>()
         .chunks(3)
