@@ -1,6 +1,9 @@
 //! Structures for the Variant Effect Predictor (VEP) endpoint of the Ensembl API.
 
+use std::str::FromStr;
+
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VEPAnalysis {
@@ -11,7 +14,8 @@ pub struct VEPAnalysis {
     pub most_severe_consequence: String,
     pub start: u32,
     pub end: u32,
-    pub allele_string: String,
+    #[serde(rename = "allele_string")]
+    pub allele: Allele,
     pub transcript_consequences: Vec<TranscriptConsequence>,
 }
 
@@ -36,6 +40,8 @@ pub struct TranscriptConsequence {
 pub struct ProteinConsequence {
     pub hgvsp: String,
     pub hgvsc: String,
+    pub cds_start: u32,
+    pub cds_end: u32,
     pub protein_start: u32,
     pub protein_end: u32,
     pub codons: String,
@@ -53,4 +59,40 @@ impl crate::EnsemblPostEndpoint for VEPAnalysis {
     fn input(&self) -> &str {
         &self.input
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[serde(try_from = "String")]
+pub struct Allele {
+    pub normal: String,
+    pub variant: String,
+}
+impl TryFrom<String> for Allele {
+    type Error = AlleleParseError;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Ok(Self::from_str(&value)?)
+    }
+}
+impl FromStr for Allele {
+    type Err = AlleleParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let Some(mid) = s.find("/") else {
+            return Err(AlleleParseError::NoSlash);
+        };
+        let mut normal = s[..mid].to_owned();
+        let mut variant = s[mid + 1..].to_owned();
+        if normal == "-" {
+            normal = "".to_owned();
+        };
+        if variant == "-" {
+            variant = "".to_owned();
+        };
+        Ok(Self { normal, variant })
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum AlleleParseError {
+    #[error("Allele strings need to conatain a /")]
+    NoSlash,
 }

@@ -94,3 +94,107 @@ pub struct Translation {
     pub end: u32,
     pub length: u32,
 }
+/// Provide the reverse complementary sequence of a nucleotide sequence
+pub fn reverse_complement(seq: &str) -> String {
+    let mut output = String::new();
+    for b in seq.chars().rev() {
+        output.push(match b {
+            'a' => 't',
+            'A' => 'T',
+            'c' => 'g',
+            'C' => 'G',
+            'g' => 'c',
+            'G' => 'C',
+            't' => 'a',
+            'T' => 'A',
+            _ => panic!("{b} is not a recognized nucletide base"),
+        });
+    }
+    output
+}
+
+pub fn translate(seq: &str) -> String {
+    let mut output = String::new();
+    for codon in seq
+        .chars()
+        .filter(|c| c.is_uppercase())
+        .collect::<Vec<char>>()
+        .chunks(3)
+    {
+        let aa = match codon {
+            ['G', 'C', _] => 'A',
+            ['U', 'G', 'U'] | ['U', 'G', 'C'] => 'C',
+            ['G', 'A', 'U'] | ['G', 'A', 'C'] => 'D',
+            ['G', 'A', 'A'] | ['G', 'A', 'G'] => 'E',
+            ['U', 'U', 'U'] | ['U', 'U', 'C'] => 'F',
+            ['G', 'G', _] => 'G',
+            ['C', 'A', 'U'] | ['C', 'A', 'C'] => 'H',
+            ['A', 'U', 'U'] | ['A', 'U', 'C'] | ['A', 'U', 'A'] => 'I',
+            ['A', 'A', 'A'] | ['A', 'A', 'G'] => 'K',
+            ['C', 'U', _] | ['U', 'U', 'A'] | ['U', 'U', 'G'] => 'L',
+            ['A', 'U', 'G'] => 'M',
+            ['A', 'A', 'U'] | ['A', 'A', 'C'] => 'N',
+            ['C', 'C', _] => 'P',
+            ['C', 'A', 'A'] | ['C', 'A', 'G'] => 'Q',
+            ['C', 'G', _] | ['A', 'G', 'A'] | ['A', 'G', 'G'] => 'R',
+            ['U', 'C', _] => 'S',
+            ['A', 'C', _] => 'T',
+            ['G', 'U', _] => 'V',
+            ['U', 'G', 'G'] => 'W',
+            ['U', 'A', 'U'] | ['U', 'A', 'C'] => 'Y',
+            ['U', 'A', 'A'] | ['U', 'A', 'G'] | ['U', 'G', 'A'] => '*',
+            _ => panic!("{codon:?} is not a recognized codon"),
+        };
+        output.push(aa);
+        if aa == '*' {
+            break;
+        }
+    }
+    output
+}
+
+pub fn make_consequences(
+    seq: &GenomicSequence,
+    transcript: &Transcript,
+    start: u32,
+    end: u32,
+    variant_allele: &str,
+) -> Consequences {
+    let mut edited_sequence: String = String::default();
+    let upstream = &seq.seq[..(start - transcript.start) as usize];
+    let downstream = &seq.seq[..(end - transcript.start) as usize];
+    match (
+        downstream.chars().next().unwrap().is_lowercase(),
+        upstream.chars().last().unwrap().is_lowercase(),
+    ) {
+        (true, true) => return Consequences::Intron,
+        (true, false) | (false, true) => {
+            return Consequences::DisruptedSpliceSite;
+        }
+        (false, false) => {}
+    }
+    edited_sequence.push_str(upstream);
+    edited_sequence.push_str(variant_allele);
+    edited_sequence.push_str(downstream);
+
+    let mut protein_sequence = String::default();
+    if let Some(translation) = &transcript.translation {
+        protein_sequence =
+            translate(&edited_sequence[(translation.start - transcript.start) as usize..])
+    }
+    Consequences::Coding {
+        genomic_sequence: edited_sequence,
+        protein_sequence,
+        nmd: true,
+    }
+}
+
+pub enum Consequences {
+    DisruptedSpliceSite,
+    Coding {
+        genomic_sequence: String,
+        protein_sequence: String,
+        nmd: bool,
+    },
+    Intron,
+}
