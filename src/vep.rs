@@ -34,6 +34,8 @@ pub struct TranscriptConsequence {
     pub protein_consequences: Option<ProteinConsequence>,
     pub cdna_start: Option<u32>,
     pub cdna_end: Option<u32>,
+    pub exon: Option<String>,
+    pub intron: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
@@ -45,8 +47,6 @@ pub struct ProteinConsequence {
     pub protein_start: u32,
     pub protein_end: u32,
     pub codons: String,
-    pub exon: Option<String>,
-    pub intron: Option<String>,
     pub amino_acids: String,
 }
 
