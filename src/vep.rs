@@ -45,7 +45,8 @@ pub struct ProteinConsequence {
     pub protein_start: u32,
     pub protein_end: u32,
     pub codons: String,
-    pub exon: String,
+    pub exon: Option<String>,
+    pub intron: Option<String>,
     pub amino_acids: String,
 }
 
