@@ -11,6 +11,7 @@ use crate::{
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct Transcript {
     pub id: String,
+    #[serde(default)]
     pub display_name: String,
     pub start: u32,
     pub end: u32,
