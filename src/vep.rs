@@ -22,11 +22,13 @@ pub struct VEPAnalysis {
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct TranscriptConsequence {
     pub transcript_id: String,
-    pub impact: String,
+    pub impact: Option<String>,
     #[serde(default)]
     pub gene_id: String,
+    #[serde(default)]
     pub gene_symbol: String,
-    pub biotype: String,
+    pub biotype: Option<String>,
+    #[serde(default)]
     pub consequence_terms: Vec<String>,
     #[serde(default)]
     pub canonical: crate::Canonical,
