@@ -23,6 +23,7 @@ pub struct VEPAnalysis {
 pub struct TranscriptConsequence {
     pub transcript_id: String,
     pub impact: String,
+    #[serde(default)]
     pub gene_id: String,
     pub gene_symbol: String,
     pub biotype: String,
