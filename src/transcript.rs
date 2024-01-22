@@ -175,7 +175,7 @@ pub fn make_consequences(
         upstream = &seq.seq[..(start - transcript.start + 1) as usize];
         downstream = &seq.seq[(end - transcript.start) as usize..];
     } else {
-        upstream = &seq.seq[..(transcript.end - end) as usize];
+        upstream = &seq.seq[..(transcript.end - end + 1) as usize];
         downstream = &seq.seq[(transcript.end - start) as usize..];
     }
     match (
