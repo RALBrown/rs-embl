@@ -172,7 +172,7 @@ pub fn make_consequences(
     let upstream;
     let downstream;
     if transcript.strand == 1 {
-        upstream = &seq.seq[..(start - transcript.start) as usize];
+        upstream = &seq.seq[..(start - transcript.start + 1) as usize];
         downstream = &seq.seq[(end - transcript.start) as usize..];
     } else {
         upstream = &seq.seq[..(transcript.end - end) as usize];
