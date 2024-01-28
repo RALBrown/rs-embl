@@ -165,17 +165,18 @@ pub fn make_consequences(
     seq: &GenomicSequence,
     transcript: &Transcript,
     start: u32,
-    end: u32,
+    mut end: u32,
     variant_allele: &str,
 ) -> Consequences {
     let mut edited_sequence: String = String::default();
     let upstream;
     let downstream;
+    if end < start {end = start;}
     if transcript.strand == 1 {
-        upstream = &seq.seq[..(start - transcript.start + 1) as usize];
+        upstream = &seq.seq[..(start - transcript.start) as usize];
         downstream = &seq.seq[(end - transcript.start) as usize..];
     } else {
-        upstream = &seq.seq[..(transcript.end - end + 1) as usize];
+        upstream = &seq.seq[..(transcript.end - end) as usize];
         downstream = &seq.seq[(transcript.end - start) as usize..];
     }
     match (
