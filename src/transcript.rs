@@ -164,20 +164,22 @@ pub fn translate(seq: &str) -> String {
 pub fn make_consequences(
     seq: &GenomicSequence,
     transcript: &Transcript,
-    start: u32,
+    mut start: u32,
     mut end: u32,
     variant_allele: &str,
 ) -> Consequences {
     let mut edited_sequence: String = String::default();
     let upstream;
     let downstream;
-    if end < start {end = start;}
+    
     if transcript.strand == 1 {
+        if end < start {end = start;}
         upstream = &seq.seq[..(start - transcript.start) as usize];
-        downstream = &seq.seq[(end - transcript.start) as usize..];
+        downstream = &seq.seq[(end - transcript.start + 1) as usize..];
     } else {
+        if end < start {start = end;}
         upstream = &seq.seq[..(transcript.end - end) as usize];
-        downstream = &seq.seq[(transcript.end - start) as usize..];
+        downstream = &seq.seq[(transcript.end - start + 1) as usize..];
     }
     match (
         downstream.chars().next().unwrap().is_lowercase(),
@@ -190,6 +192,11 @@ pub fn make_consequences(
         (false, false) => {}
     }
     edited_sequence.push_str(upstream);
+    if transcript.strand == 1 {
+        edited_sequence.push_str(variant_allele);
+    } else {
+        edited_sequence.push_str(&reverse_complement(variant_allele));
+    }
     edited_sequence.push_str(variant_allele);
     edited_sequence.push_str(downstream);
 
