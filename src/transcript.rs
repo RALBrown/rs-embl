@@ -1,9 +1,12 @@
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     sequence::{CdnaSequence, GenomicSequence},
     Client,
 };
+
+const LAST_EJC_REGEX: &str = r".+([A-Z][a-z].+)$";
 
 /**
 
@@ -114,14 +117,42 @@ pub fn reverse_complement(seq: &str) -> String {
     output
 }
 
-pub fn translate(seq: &str) -> String {
+#[derive(Debug, Default, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+pub struct TranslationConsequence{
+    pub protein_sequence: String,
+    pub stop_index: Option<usize>,
+    pub last_ejc_index: Option<usize>,
+    pub translation_type: TranslationType,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+pub enum TranslationType{
+    NORMAL,
+    NMD,
+    NONSTOP,
+    #[default]
+    ERROR,
+}
+
+pub fn translate(seq: &str) -> TranslationConsequence {
+    let last_ejc_capture = Regex::new(LAST_EJC_REGEX)
+        .unwrap()
+        .captures(seq);
+    let last_ejc_index = match last_ejc_capture {
+        Some(capture) => Some(capture.get(1).unwrap().start()),
+        None => None,
+    };
     let mut output = String::new();
+    let mut counter: usize = 0;
     for codon in seq
         .chars()
         .map(|c| {
+            counter += 1;
             if c == 'T' {
                 return 'U';
-            } else {
+            } else if c == 't' {
+                return 'u';
+            }else {
                 return c;
             }
         })
@@ -157,8 +188,28 @@ pub fn translate(seq: &str) -> String {
         if aa == '*' {
             break;
         }
+        return TranslationConsequence{
+            protein_sequence: output,
+            stop_index: None,
+            last_ejc_index,
+            translation_type: TranslationType::NONSTOP,
+        }
     }
-    output
+    TranslationConsequence{
+        protein_sequence: output,
+        stop_index: Some(counter),
+        last_ejc_index,
+        translation_type: match last_ejc_index {
+            None => TranslationType::NORMAL,
+            Some(last_ejc_index) => {
+                if counter + 50 < last_ejc_index {
+                    TranslationType::NMD
+                } else {
+                    TranslationType::NORMAL
+                }
+            }
+        },
+    }
 }
 
 pub fn make_consequences(
@@ -200,10 +251,18 @@ pub fn make_consequences(
     edited_sequence.push_str(variant_allele);
     edited_sequence.push_str(downstream);
 
-    let mut protein_sequence = String::default();
+    let mut edited_protein_sequence = TranslationConsequence::default();
+    let mut unedited_protein_sequence = TranslationConsequence::default();
     if let Some(translation) = &transcript.translation {
-        protein_sequence = translate(
+        edited_protein_sequence = translate(
             &edited_sequence[if transcript.strand == 1 {
+                (translation.start - transcript.start) as usize
+            } else {
+                (transcript.end - translation.end) as usize
+            }..],
+        );
+        unedited_protein_sequence = translate(
+            &seq.seq[if transcript.strand == 1 {
                 (translation.start - transcript.start) as usize
             } else {
                 (transcript.end - translation.end) as usize
@@ -211,9 +270,10 @@ pub fn make_consequences(
         );
     }
     Consequences::Coding {
-        genomic_sequence: edited_sequence,
-        protein_sequence,
-        nmd: true,
+        edited_genomic_sequence: edited_sequence,
+        edited_protein_sequence,
+        unedited_protein_sequence
+
     }
 }
 
@@ -221,9 +281,9 @@ pub fn make_consequences(
 pub enum Consequences {
     DisruptedSpliceSite,
     Coding {
-        genomic_sequence: String,
-        protein_sequence: String,
-        nmd: bool,
+        edited_genomic_sequence: String,
+        edited_protein_sequence: TranslationConsequence,
+        unedited_protein_sequence: TranslationConsequence,
     },
     Intron,
 }
