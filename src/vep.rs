@@ -16,6 +16,7 @@ pub struct VEPAnalysis {
     pub end: u32,
     #[serde(rename = "allele_string")]
     pub allele: Allele,
+    #[serde(default)]
     pub transcript_consequences: Vec<TranscriptConsequence>,
 }
 
