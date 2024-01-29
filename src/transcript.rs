@@ -147,7 +147,6 @@ pub fn translate(seq: &str) -> TranslationConsequence {
     for codon in seq
         .chars()
         .map(|c| {
-            counter += 1;
             if c == 'T' {
                 return 'U';
             } else if c == 't' {
@@ -184,6 +183,7 @@ pub fn translate(seq: &str) -> TranslationConsequence {
             ['U', 'A', 'A'] | ['U', 'A', 'G'] | ['U', 'G', 'A'] => '*',
             _ => panic!("{codon:?} is not a recognized codon"),
         };
+        counter += 3;
         output.push(aa);
         if aa == '*' {
             return TranslationConsequence{
