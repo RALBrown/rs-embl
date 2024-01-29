@@ -186,29 +186,28 @@ pub fn translate(seq: &str) -> TranslationConsequence {
         };
         output.push(aa);
         if aa == '*' {
-            break;
-        }
-        return TranslationConsequence{
-            protein_sequence: output,
-            stop_index: None,
-            last_ejc_index,
-            translation_type: TranslationType::NONSTOP,
+            return TranslationConsequence{
+                protein_sequence: output,
+                stop_index: Some(counter),
+                last_ejc_index,
+                translation_type: match last_ejc_index {
+                    None => TranslationType::NORMAL,
+                    Some(last_ejc_index) => {
+                        if counter + 50 < last_ejc_index {
+                            TranslationType::NMD
+                        } else {
+                            TranslationType::NORMAL
+                        }
+                    }
+                },
+            };
         }
     }
     TranslationConsequence{
         protein_sequence: output,
-        stop_index: Some(counter),
+        stop_index: None,
         last_ejc_index,
-        translation_type: match last_ejc_index {
-            None => TranslationType::NORMAL,
-            Some(last_ejc_index) => {
-                if counter + 50 < last_ejc_index {
-                    TranslationType::NMD
-                } else {
-                    TranslationType::NORMAL
-                }
-            }
-        },
+        translation_type: TranslationType::NONSTOP,
     }
 }
 
