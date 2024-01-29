@@ -6,7 +6,7 @@ use crate::{
     Client,
 };
 
-const LAST_EJC_REGEX: &str = r".+([A-Z][a-z].+)$";
+const LAST_EJC_REGEX: &str = r".+([A-Z][a-z]+[A-Z]+)$";
 
 /**
 
