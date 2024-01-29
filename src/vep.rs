@@ -8,6 +8,8 @@ use thiserror::Error;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VEPAnalysis {
     pub input: String,
+    #[serde(default)]
+    pub id: String,
     pub strand: i8,
     pub assembly_name: String,
     pub seq_region_name: String,
