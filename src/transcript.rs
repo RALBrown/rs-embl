@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
@@ -147,6 +148,7 @@ pub fn translate(seq: &str) -> TranslationConsequence {
     for codon in seq
         .chars()
         .map(|c| {
+            counter += 1;
             if c == 'T' {
                 return 'U';
             } else if c == 't' {
@@ -156,34 +158,32 @@ pub fn translate(seq: &str) -> TranslationConsequence {
             }
         })
         .filter(|c| c.is_uppercase())
-        .collect::<Vec<char>>()
-        .chunks(3)
+        .tuples()
     {
         let aa = match codon {
-            ['G', 'C', _] => 'A',
-            ['U', 'G', 'U'] | ['U', 'G', 'C'] => 'C',
-            ['G', 'A', 'U'] | ['G', 'A', 'C'] => 'D',
-            ['G', 'A', 'A'] | ['G', 'A', 'G'] => 'E',
-            ['U', 'U', 'U'] | ['U', 'U', 'C'] => 'F',
-            ['G', 'G', _] => 'G',
-            ['C', 'A', 'U'] | ['C', 'A', 'C'] => 'H',
-            ['A', 'U', 'U'] | ['A', 'U', 'C'] | ['A', 'U', 'A'] => 'I',
-            ['A', 'A', 'A'] | ['A', 'A', 'G'] => 'K',
-            ['C', 'U', _] | ['U', 'U', 'A'] | ['U', 'U', 'G'] => 'L',
-            ['A', 'U', 'G'] => 'M',
-            ['A', 'A', 'U'] | ['A', 'A', 'C'] => 'N',
-            ['C', 'C', _] => 'P',
-            ['C', 'A', 'A'] | ['C', 'A', 'G'] => 'Q',
-            ['C', 'G', _] | ['A', 'G', 'A'] | ['A', 'G', 'G'] => 'R',
-            ['U', 'C', _] | ['A', 'G', 'U'] | ['A', 'G', 'C'] => 'S',
-            ['A', 'C', _] => 'T',
-            ['G', 'U', _] => 'V',
-            ['U', 'G', 'G'] => 'W',
-            ['U', 'A', 'U'] | ['U', 'A', 'C'] => 'Y',
-            ['U', 'A', 'A'] | ['U', 'A', 'G'] | ['U', 'G', 'A'] => '*',
+            ('G', 'C', _) => 'A',
+            ('U', 'G', 'U') | ('U', 'G', 'C') => 'C',
+            ('G', 'A', 'U') | ('G', 'A', 'C') => 'D',
+            ('G', 'A', 'A') | ('G', 'A', 'G') => 'E',
+            ('U', 'U', 'U') | ('U', 'U', 'C') => 'F',
+            ('G', 'G', _) => 'G',
+            ('C', 'A', 'U') | ('C', 'A', 'C') => 'H',
+            ('A', 'U', 'U') | ('A', 'U', 'C') | ('A', 'U', 'A') => 'I',
+            ('A', 'A', 'A') | ('A', 'A', 'G') => 'K',
+            ('C', 'U', _) | ('U', 'U', 'A') | ('U', 'U', 'G') => 'L',
+            ('A', 'U', 'G') => 'M',
+            ('A', 'A', 'U') | ('A', 'A', 'C') => 'N',
+            ('C', 'C', _) => 'P',
+            ('C', 'A', 'A') | ('C', 'A', 'G') => 'Q',
+            ('C', 'G', _) | ('A', 'G', 'A') | ('A', 'G', 'G') => 'R',
+            ('U', 'C', _) | ('A', 'G', 'U') | ('A', 'G', 'C') => 'S',
+            ('A', 'C', _) => 'T',
+            ('G', 'U', _) => 'V',
+            ('U', 'G', 'G') => 'W',
+            ('U', 'A', 'U') | ('U', 'A', 'C') => 'Y',
+            ('U', 'A', 'A') | ('U', 'A', 'G') | ('U', 'G', 'A') => '*',
             _ => panic!("{codon:?} is not a recognized codon"),
         };
-        counter += 3;
         output.push(aa);
         if aa == '*' {
             return TranslationConsequence{
