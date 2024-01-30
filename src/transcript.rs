@@ -30,7 +30,7 @@ pub struct Transcript {
     pub canonical: crate::Canonical,
     pub species: String,
     #[serde(default)]
-    biotype: crate::Biotype,
+    pub biotype: crate::Biotype,
 }
 impl Transcript {
     pub async fn cdna_sequence(&self, client: Client<'static, CdnaSequence>) -> CdnaSequence {
@@ -271,8 +271,7 @@ pub fn make_consequences(
     Consequences::Coding {
         edited_genomic_sequence: edited_sequence,
         edited_protein_sequence,
-        unedited_protein_sequence
-
+        unedited_protein_sequence,
     }
 }
 
