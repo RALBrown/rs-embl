@@ -5,7 +5,24 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+pub enum VEPResult {
+    Success(VEPAnalysis),
+    EnsemblError(crate::api::EnsemblError),
+    Error,
+}
+impl VEPResult {
+    pub fn input(&self) -> &str {
+        match self {
+            VEPResult::Success(analysis) => &analysis.input,
+            VEPResult::EnsemblError(error) => &error.input,
+            VEPResult::Error => "ERROR",
+        }
+    }
+}
+
+/// A successful VEP analysis result.
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct VEPAnalysis {
     pub input: String,
     #[serde(default)]
@@ -68,6 +85,18 @@ impl crate::EnsemblPostEndpoint for VEPAnalysis {
     }
 }
 
+impl crate::EnsemblPostEndpoint for VEPResult {
+    fn extension() -> &'static str {
+        "/vep/human/hgvs"
+    }
+    fn payload_template() -> &'static str {
+        r#"{"hgvs": 1, "numbers": 1, "canonical" : 1, "NMD" : 1, "hgvs_notations" : {ids}}"#
+    }
+    fn input(&self) -> &str {
+        self.input()
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(try_from = "String")]
 pub struct Allele {
@@ -77,7 +106,7 @@ pub struct Allele {
 impl TryFrom<String> for Allele {
     type Error = AlleleParseError;
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        Ok(Self::from_str(&value)?)
+        Self::from_str(&value)
     }
 }
 impl FromStr for Allele {

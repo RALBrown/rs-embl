@@ -11,7 +11,9 @@ async fn main() -> Result<()> {
             let v = vep_getter.client();
             let t = transcript_getter.client();
             tokio::spawn(async move {
-                let Some(vep) = v.get((*id).to_owned()).await else {return None};
+                let Some(vep) = v.get((*id).to_owned()).await else {
+                    return None;
+                };
                 let consequences = vep.transcript_consequences.clone();
                 let handles = consequences
                     .into_iter()
@@ -27,10 +29,14 @@ async fn main() -> Result<()> {
         })
         .collect::<Vec<_>>();
     for v in handles.into_iter() {
-        let Some((vep, tcs)) = v.await.unwrap() else {continue};
+        let Some((vep, tcs)) = v.await.unwrap() else {
+            continue;
+        };
         println!("{:#?}", vep);
         for tc in tcs {
-            let Some(tc) = tc.await.unwrap() else {continue};
+            let Some(tc) = tc.await.unwrap() else {
+                continue;
+            };
             println!("{:#?}", tc);
             let genomic_seq = tc.genomic_sequence(sequence_getter.client()).await;
             let exons = genomic_seq.exons();
@@ -38,7 +44,7 @@ async fn main() -> Result<()> {
             let exon1 = exons.into_iter().next();
             let output = match exon1 {
                 Some(s) => {
-                    let Some(t) = tc.translation else {continue};
+                    let Some(t) = tc.translation else { continue };
                     &(s.get((t.start - tc.start) as usize..).unwrap_or(""))
                 }
                 None => "",

@@ -1,4 +1,5 @@
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use tokio::sync::mpsc;
@@ -208,6 +209,12 @@ pub trait EnsemblPostEndpoint {
     fn payload_template() -> &'static str;
     /// Get the input string from the Ensembl response. Will usually be &self.input
     fn input(&self) -> &str;
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+pub struct EnsemblError {
+    pub input: String,
+    pub error: String,
 }
 
 #[cfg(target_arch = "wasm32")]

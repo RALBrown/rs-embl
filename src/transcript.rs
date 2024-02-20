@@ -119,7 +119,7 @@ pub fn reverse_complement(seq: &str) -> String {
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
-pub struct TranslationConsequence{
+pub struct TranslationConsequence {
     pub protein_sequence: String,
     pub stop_index: Option<usize>,
     pub last_ejc_index: Option<usize>,
@@ -127,7 +127,7 @@ pub struct TranslationConsequence{
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
-pub enum TranslationType{
+pub enum TranslationType {
     NORMAL,
     NMD,
     NONSTOP,
@@ -136,9 +136,7 @@ pub enum TranslationType{
 }
 
 pub fn translate(seq: &str) -> TranslationConsequence {
-    let last_ejc_capture = Regex::new(LAST_EJC_REGEX)
-        .unwrap()
-        .captures(seq);
+    let last_ejc_capture = Regex::new(LAST_EJC_REGEX).unwrap().captures(seq);
     let last_ejc_index = match last_ejc_capture {
         Some(capture) => Some(capture.get(1).unwrap().start()),
         None => None,
@@ -153,7 +151,7 @@ pub fn translate(seq: &str) -> TranslationConsequence {
                 return 'U';
             } else if c == 't' {
                 return 'u';
-            }else {
+            } else {
                 return c;
             }
         })
@@ -186,7 +184,7 @@ pub fn translate(seq: &str) -> TranslationConsequence {
         };
         output.push(aa);
         if aa == '*' {
-            return TranslationConsequence{
+            return TranslationConsequence {
                 protein_sequence: output,
                 stop_index: Some(counter),
                 last_ejc_index,
@@ -203,7 +201,7 @@ pub fn translate(seq: &str) -> TranslationConsequence {
             };
         }
     }
-    TranslationConsequence{
+    TranslationConsequence {
         protein_sequence: output,
         stop_index: None,
         last_ejc_index,
@@ -221,13 +219,17 @@ pub fn make_consequences(
     let mut edited_sequence: String = String::default();
     let upstream;
     let downstream;
-    
+
     if transcript.strand == 1 {
-        if end < start {end = start;}
+        if end < start {
+            end = start;
+        }
         upstream = &seq.seq[..(start - transcript.start) as usize];
         downstream = &seq.seq[(end - transcript.start + 1) as usize..];
     } else {
-        if end < start {start = end;}
+        if end < start {
+            start = end;
+        }
         upstream = &seq.seq[..(transcript.end - end) as usize];
         downstream = &seq.seq[(transcript.end - start + 1) as usize..];
     }
