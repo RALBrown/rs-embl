@@ -98,7 +98,7 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
         if input.is_empty() {
             return;
         }
-        let ids: Vec<&str> = input.keys().map(|s| s.as_str()).collect();
+        let ids: Vec<&str> = input.keys().map(|s| s.as_str()).take(T::max_post_size()).collect();
         let payload = T::payload_template().replace(r"{ids}", &json::stringify(ids));
         let values = client
             .post(String::from(ENSEMBL_SERVER) + T::extension())
@@ -213,6 +213,10 @@ pub trait EnsemblPostEndpoint {
     fn payload_template() -> &'static str;
     /// Get the input string from the Ensembl response. Will usually be &self.input
     fn input(&self) -> &str;
+    // Get the maximum number of identifiers that can be sent in a single request.
+    fn max_post_size() -> usize {
+        50
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]

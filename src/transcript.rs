@@ -63,6 +63,10 @@ impl crate::EnsemblPostEndpoint for Transcript {
     fn input(&self) -> &str {
         &self.id
     }
+
+    fn max_post_size() -> usize {
+        1000
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]

@@ -84,6 +84,9 @@ impl crate::EnsemblPostEndpoint for VEPAnalysis {
     fn input(&self) -> &str {
         &self.input
     }
+    fn max_post_size() -> usize {
+        200
+    }
 }
 
 impl crate::EnsemblPostEndpoint for VEPResult {
@@ -95,6 +98,9 @@ impl crate::EnsemblPostEndpoint for VEPResult {
     }
     fn input(&self) -> &str {
         self.input()
+    }
+    fn max_post_size() -> usize {
+        200
     }
 }
 
