@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[serde(untagged)]
 pub enum VEPResult {
     Success(VEPAnalysis),
     EnsemblError(crate::api::EnsemblError),
