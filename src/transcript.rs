@@ -221,15 +221,9 @@ pub fn make_consequences(
     let downstream;
 
     if transcript.strand == 1 {
-        if end < start {
-            end = start;
-        }
         upstream = &seq.seq[..(start - transcript.start) as usize];
         downstream = &seq.seq[(end - transcript.start + 1) as usize..];
     } else {
-        if end < start {
-            start = end;
-        }
         upstream = &seq.seq[..(transcript.end - end) as usize];
         downstream = &seq.seq[(transcript.end - start + 1) as usize..];
     }
@@ -249,7 +243,6 @@ pub fn make_consequences(
     } else {
         edited_sequence.push_str(&reverse_complement(variant_allele));
     }
-    edited_sequence.push_str(variant_allele);
     edited_sequence.push_str(downstream);
 
     let mut edited_protein_sequence = TranslationConsequence::default();
@@ -286,4 +279,87 @@ pub enum Consequences {
         unedited_protein_sequence: TranslationConsequence,
     },
     Intron,
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::sequence::GenomicSequence;
+
+    const TTR_GENOME_SEQ: &str = "ACAGAAGTCCACTCATTCTTGGCAGGATGGCTTCTCATCGTCTGCTCCTCCTCTGCCTTGCTGGACTGGTATTTGTGTCTGAGGCTGGCCCTACGgtgagtgtttctgtgacatcccattcctacatttaagattcacgctaaatgaagtagaagtgactccttccagctttgccaaccagcttttattactagggcaagggtacccagcatctatttttaatataattaattcaaacttcaaaaagaatgaagttccactgagcttactgagctgggacttgaactctgagcattctacctcattgctttggtgcattaggtttgtaatatctggtacctctgtttcctcagatagatgatagaaataaagatatgatattaaggaagctgttaatactgaattttcagaaaagtatccctccataaaatgtatttgggggacaaactgcaggagattatattctggccctatagttattcaaaacgtatttattgattaatctttaaaaggcttagtgaacaatattctagtcagatatctaattcttaaatcctctagaagaattaactaatactataaaatgggtctggatgtagttctgacattattttataacaactggtaagagggagtgactatagcaacaactaaaatgatctcaggaaaacctgtttggccctatgtatggtacattacatcttttcagtaattccactcaaatggagacttttaacaaagcaactgttctcaggggacctattttctcccttaaaattcattatacacatccctggttgatagcagtgtgtctggaggcagaaaccattcttgctttggaaacaattacgtctgtgttatactgagtagggaagctcattaattgtcgacacttacgttcctgataatgggatcagtgtgtaattcttgtttcgctccagatttctaataccacaaagaataaatcctttcactctgatcaattttgttaacttctcacgtgtcttctctacacccagGGCACCGGTGAATCCAAGTGTCCTCTGATGGTCAAAGTTCTAGATGCTGTCCGAGGCAGTCCTGCCATCAATGTGGCCGTGCATGTGTTCAGAAAGGCTGCTGATGACACCTGGGAGCCATTTGCCTCTGGgtaagttgccaaagaaccctcccacaggacttggttttatcttcccgtttgcccctcacttggtagagagaggctcacatcatctgctaaagaatttacaagtagattgaaaaacgtaggcagaggtcaagtatgccctctgaaggatgccctctttttgttttgcttagctaggaagtgaccaggaacctgagcatcatttaggggcagacagtagagaaaagaaggaatcagaactcctctcctctagctgtggtttgcaacccttttgggtcacagaacactttatgtaggtgatgaaaagtaaacattctatgcccagaaaaaatgcacagatacacacacatacaaaatcatatatgtgattttaggagtttcacagattccctggtgtccctgggtaacaccaaagctaagtgtccttgtcttagaattttaggaaaaggtataatgtgtattaacccattaacaaaaggaaaggaattcagaaatattattaaccaggcatctgtctgtagttaatatggatcacccaaaacccaaggcttttgcctaatgaacactttggggcacctactgtgtgcaaggctgggggctgtcaagctcagttaaaaaaaaaaagatagaagagatggatccatgaggcaaagtacagccccaggctaatcccacgatcacccgacttcatgtccaagagtggcttctcaccttcattagccagttcacaattttcatggagtttttctacctgcactagcaaaaacttcaaggaaaatacatattaataaatctaagcaaagtgaccagaagacagagcaatcaggagaccctttgcatccagcagaagaggaactgctaagtatttacatctccacagagaagaatttctgttgggttttaattgaaccccaagaaccacatgattcttcaaccattattgggaagatcattttcttaggtctggttttaactggctttttatttgggaattcatttatgtttatataaaatgccaagcataacatgaaaagtggttacaggactattctaagggagagacagaatggacaccaaaaatattccaatgttcttgtgaatcttttccttgcaccaggacaaaaaaaaaaagaagtgaaaagaagaaaggaggaggggcataatcagagtcagtaaagacaactgctatttttatctatcgtagctgttgcagtcaaatgggaagcaatttccaacattcaactatggagctggtacttacatggaaatagaagttgcctagtgtttgttgctggcaaagagttatcagagaggttaaatatataaaagggaaaagagtcagatacaggttcttcttcctactttaggttttccactgtgtgtgcaaatgatactccctggtggtgtgcagatgcctcaaagctatcctcacaccacaagggagaggagcgagatcctgctgtcctggagaagtgcagagttagaacagctgtggccacttgcatccaatcatcaatcttgaatcacagggactctttcttaagtaaacattatacctggccgggcacggtggctcacgcctgtaatcccagcactttgggatgccaaagtgggcatatcatctgaggtcaggagttcaagaccagcctggccaacatggcaaaactccgtctttatgaaaaatacaaaaattagccaggcatggtggcaggcgcctgtaatcccagctaattgggaggctgaggctggagaatcccttgaatctaggaggcagaggttgcagtgagctgagatcgtgccattgcactccagcctgggtgacaagagtaaaactctgtctcaaaaaaaaaaaattatacctacattctcttcttatcagagaaaaaaatctacagtgagcttttcaaaaagtttttacaaactttttgccatttaatttcagttaggagttttccctacttctgacttagttgaggggaaatgttcataacatgtttataacatgtttatgtgtgttagttggtgggggtgtattactttgccatgccatttgtttcctccatgcgtaacttaatccagactttcacaccttatagGAAAACCAGTGAGTCTGGAGAGCTGCATGGGCTCACAACTGAGGAGGAATTTGTAGAAGGGATATACAAAGTGGAAATAGACACCAAATCTTACTGGAAGGCACTTGGCATCTCCCCATTCCATGAGCATGCAGAGgtgagtatacagaccttcgagggttgttttggttttggtttttgcttttggcattccaggaaatgcacagttttactcagtgtaccacagaaatgtcctaaggaaggtgatgaatgaccaaaggttccctttcctattatacaagaaaaaattcacaacactctgagaagcaaatttctttttgactttgatgaaaatccacttagtaacatgacttgaacttacatgaaactactcatagtctattcattccactttatatgaatattgatgtatctgctgttgaaataatagtttatgaggcagccctccagaccccacgtagagtgtatgtaacaagagatgcaccattttatttctcgaaaacccgtaacattcttcattccaaaacacatctggcttctcggaggtctggacaagtgattcttggcaacacatacctatagagacaataaaatcaaagtaataatggcaacacaatagataacatttaccaagcatacaccatgtggcagacacaattataagtgttttccatatttaacctacttaatcctcaggaataagccactgaggtcagtcctattattatccccatcttatagatgaagaaaatgaggcaccaggaagtcaaataacttgtcaaaggtcacaagactaggaaatacacaagtagaaatgtttacaattaaggcccaggctgggtttgccctcagttctgctatgcctcgcattatgccccaggaaactttttcccttgtgaaagccaagcttaaaaaaagaaaagccacatttgtaacgtgctctgttcccctgcctatggtgaggatcttcaaacagttatacatggacccagtccccctgccttctccttaatttcttaagtcatttgaaacagatggctgtcatggaaatagaatccagacatgttggtcagagttaaagatcaactaattccatcaaaaatagctcggcatgaaagggaactattctctggcttagtcatggatgagactttcaattgctataaagtggttcctttattagacaatgttaccagggaaacaacaggggtttgtttgacttctggggcccacaagtcaacaagagagccccatctaccaaggagcatgtccctgactacccctcagccagcagcaagacatggaccccagtcagggcaggagcagggtttcggcggcgcccagcacaagacattgcccctagagtctcagcccctaccctcgagtaatagatctgcctacctgagactgttgtttgcccaagagctgggtctcagcctgatgggaaccatataaaaaggttcactgacatactgcccacatgttgttctctttcattagatcttagcttccttgtctgctcttcattcttgcagtattcattcaacaaacattaaaaaaaaaaaaaagcattctatgtgtggaacactctgctagatgctgtggatttagaaatgaaaatacatcccgacccttggaatggaagggaaaggactgaagtaagacagattaagcaggaccgtcagcccagcttgaagcccagataaatacggagaacaagagagagcgagtagtgagagatgagtcccaatgcctcactttggtgacgggtgcgtggtgggcttcatgcagcttcttctgataaatgcctccttcagaactggtcaactctaccttggccagtgacccaggtggtcatagtagatttaccaagggaaaatggaaacttttattaggagctcttaggcctcttcacttcatggatttttttttcctttttttttgagatggagttttgccctgtcacccaggctggaatgcagtggtgcaatctcagctcactgcaacctccgcctcccaggttcaagcaattctcctgcctcagcctcccgagtagctgggactacaggtgtgcgccaccacaccaggctaatttttgtattttttgtaaagacaggttttcaccacgttggccaggctggtctgaactccagacctcaggtgattcacctgtctcagcctcccaaagtgctgggattacaggtgtgagccaccgtgcccggctacttcatggatttttgattacagattatgcctcttacaatttttaagaagaatcaagtgggctgaaggtcaatgtcaccataagacaaaagacatttttattagttgattctagggaattggccttaaggggagccctttcttcctaagagattcttaggtgattctcacttcctcttgccccagtattatttttgtttttggtatggctcactcagatccttttttcctcctatccctaagtaatccgggtttctttttcccatatttagaacaaaatgtatttatgcagagtgtgtccaaacctcaacccaaggcctgtatacaaaataaatcaaattaaacacatctttactgtcttctacctctttcctgacctcaatatatcccaacttgcctcactctgagaaccaaggctgtcccagcacctgagtcgcagatattctactgatttgacagaactgtgtgactatctggaacagcattttgatccacaatttgcccagttacaaagcttaaatgagctctagtgcatgcatatatatttcaaaattccaccatgatcttccacactctgtattgtaaatagagccctgtaatgcttttacttcgtatttcattgcttgttatacataaaaatatacttttcttcttcatgttagaaaatgcaaagaataggagggtgggggaatctctgggcttggagacaggagacttgccttcctactatggttccatcagaatgtagactgggacaatacaataattcaagtctggtttgctcatctgtaaattgggaagaatgtttccagctccagaatgctaaatctctaagtctgtggttggcagccactattgcagcagctcttcaatgactcaatgcagttttgcattctccctaccttttttttctaaaaccaataaaatagatacagcctttaggctttctgggatttcccttagtcaagctagggtcatcctgactttcggcgtgaatttgcaaaacaagacctgactctgtactcctgctctaaggactgtgcatggttccaaaggcttagcttgccagcatatttgagctttttccttctgttcaaactgttccaaaatataaaagaataaaattaattaagttggcactggacttccggtggtcagtcatgtgtgtcatctgtcacgtttttcgggctctggtggaaatggatctgtctgtcttctctcatagGTGGTATTCACAGCCAACGACTCCGGCCCCCGCCGCTACACCATTGCCGCCCTGCTGAGCCCCTACTCCTATTCCACCACGGCTGTCGTCACCAATCCCAAGGAATGAGGGACTTCTCCTCCAGTGGACCTGAAGGACGAGGGATGGGATTTCATGTAACCAAGAGTATTCCATTTTTACTAAAGCAGTGTTTTCACCTCATATGCTATGTTAGAAGTCCAGGCAGAGACAATAAAACATTCCTGTGAAAGGCA";
+    const TTR_201_JSON: &str = r#"{"end":31598821,"object_type":"Transcript","is_canonical":1,"length":616,"db_type":"core","id":"ENST00000237014","Translation":{"version":4,"species":"homo_sapiens","start":31591903,"length":147,"id":"ENSP00000237014","db_type":"core","Parent":"ENST00000237014","end":31598675,"object_type":"Translation"},"species":"homo_sapiens","display_name":"TTR-201","start":31591877,"version":8,"seq_region_name":"18","assembly_name":"GRCh38","logic_name":"ensembl_havana_transcript_homo_sapiens","Exon":[{"species":"homo_sapiens","start":31591877,"version":2,"assembly_name":"GRCh38","seq_region_name":"18","end":31591971,"object_type":"Exon","db_type":"core","id":"ENSE00001836564","strand":1},{"start":31592896,"species":"homo_sapiens","seq_region_name":"18","assembly_name":"GRCh38","version":1,"end":31593026,"object_type":"Exon","id":"ENSE00003556666","db_type":"core","strand":1},{"id":"ENSE00000796939","db_type":"core","strand":1,"end":31595255,"object_type":"Exon","version":1,"seq_region_name":"18","assembly_name":"GRCh38","species":"homo_sapiens","start":31595120},{"end":31598821,"object_type":"Exon","db_type":"core","id":"ENSE00001827041","strand":1,"start":31598568,"species":"homo_sapiens","seq_region_name":"18","assembly_name":"GRCh38","version":2}],"strand":1,"Parent":"ENSG00000118271","source":"ensembl_havana","UTR":[{"assembly_name":"GRCh38","seq_region_name":"18","start":31591877,"source":"ensembl_havana","type":"five_prime_utr","species":"homo_sapiens","db_type":"core","id":"ENST00000237014","strand":1,"Parent":"ENST00000237014","end":31591902,"object_type":"five_prime_UTR"},{"type":"three_prime_utr","species":"homo_sapiens","source":"ensembl_havana","start":31598676,"seq_region_name":"18","assembly_name":"GRCh38","object_type":"three_prime_UTR","end":31598821,"strand":1,"Parent":"ENST00000237014","id":"ENST00000237014","db_type":"core"}],"biotype":"protein_coding"}"#;
+    const TTR_V30M_DEL_PROTEIN: &str = "MASHRLLLLCLAGLVFVSEAGPTGTGESKCPLMVKVLDAVRGSPAINVACMCSERLLMTPGSHLPLGKPVSLESCMGSQLRRNL*";
+    const TTR_V30M_INS_PROTEIN: &str = "MASHRLLLLCLAGLVFVSEAGPTGTGESKCPLMVKVLDAVRGSPAINVAGACVQKGC*";
+    #[test]
+    fn test_snp(){
+        let transcript = serde_json::from_str::<super::Transcript>(TTR_201_JSON).unwrap();
+        let genomic_seq: GenomicSequence = GenomicSequence{
+            query: "".to_owned(),
+            id: "".to_owned(),
+            desc: None,
+            seq: TTR_GENOME_SEQ.to_owned(),
+        };
+        const END: u32 = 31592974;
+        const START: u32 = 31592974;
+        const VARIANT_ALLELE: &str = "A";
+        let consequences = super::make_consequences(
+            &genomic_seq,
+            &transcript, 
+            START, 
+            END, 
+            VARIANT_ALLELE);
+        let super::Consequences::Coding{
+            edited_genomic_sequence,
+            edited_protein_sequence,
+            unedited_protein_sequence,} = consequences else {panic!()};
+        const V30M_TTR: &str = "MASHRLLLLCLAGLVFVSEAGPTGTGESKCPLMVKVLDAVRGSPAINVAMHVFRKAADDTWEPFASGKTSESGELHGLTTEEEFVEGIYKVEIDTKSYWKALGISPFHEHAEVVFTANDSGPRRYTIAALLSPYSYSTTAVVTNPKE*";
+        assert_eq!(&edited_protein_sequence.protein_sequence, V30M_TTR);
+    }
+    #[test]
+    fn test_del(){
+        let transcript = serde_json::from_str::<super::Transcript>(TTR_201_JSON).unwrap();
+        let genomic_seq: GenomicSequence = GenomicSequence{
+            query: "".to_owned(),
+            id: "".to_owned(),
+            desc: None,
+            seq: TTR_GENOME_SEQ.to_owned(),
+        };
+        const END: u32 = 31592974;
+        const START: u32 = 31592974;
+        const VARIANT_ALLELE: &str = "-";
+        let consequences = super::make_consequences(
+            &genomic_seq,
+            &transcript, 
+            START, 
+            END, 
+            VARIANT_ALLELE);
+        let super::Consequences::Coding{
+            edited_genomic_sequence,
+            edited_protein_sequence,
+            unedited_protein_sequence,} = consequences else {panic!()};
+        assert_eq!(&edited_protein_sequence.protein_sequence, TTR_V30M_DEL_PROTEIN);
+    }
+    #[test]
+    fn test_ins(){
+        let transcript = serde_json::from_str::<super::Transcript>(TTR_201_JSON).unwrap();
+        let genomic_seq: GenomicSequence = GenomicSequence{
+            query: "".to_owned(),
+            id: "".to_owned(),
+            desc: None,
+            seq: TTR_GENOME_SEQ.to_owned(),
+        };
+        const END: u32 = 31592974;
+        const START: u32 = 31592975;
+        const VARIANT_ALLELE: &str = "G";
+        let consequences = super::make_consequences(
+            &genomic_seq,
+            &transcript, 
+            START, 
+            END, 
+            VARIANT_ALLELE);
+        let super::Consequences::Coding{
+            edited_genomic_sequence,
+            edited_protein_sequence,
+            unedited_protein_sequence,} = consequences else {panic!()};
+        assert_eq!(&edited_protein_sequence.protein_sequence, TTR_V30M_INS_PROTEIN);
+    }
 }
