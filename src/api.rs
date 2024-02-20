@@ -114,6 +114,10 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
         let outputs: Vec<T> = if let Ok(outputs) = serde_json::from_str(&values) {
             outputs
         } else {
+            if let Ok(e) = serde_json::from_str::<EnsemblTopLevelError>(&values) {
+                eprintln!("Ensembl Error: {}", e.error);
+                return;
+            }
             if let Ok(outputs) = serde_json::from_str::<HashMap<String, T>>(&values) {
                 outputs.into_values().collect()
             } else {
@@ -122,7 +126,7 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
         };
         for output in outputs.into_iter() {
             let target = input.remove(output.input()).unwrap();
-            let _ = target.send(output); //if the sender's not listening that's it's problem
+            let _ = target.send(output); //if the sender's not listening that's its problem
         }
     }
 
@@ -209,6 +213,11 @@ pub trait EnsemblPostEndpoint {
     fn payload_template() -> &'static str;
     /// Get the input string from the Ensembl response. Will usually be &self.input
     fn input(&self) -> &str;
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+pub struct EnsemblTopLevelError {
+    pub error: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
