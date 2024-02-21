@@ -22,9 +22,9 @@ pub struct Transcript {
     pub strand: i8,
     #[serde(rename = "Translation")]
     pub translation: Option<Translation>,
-    #[serde(rename = "UTR")]
+    #[serde(rename = "UTR", default)]
     pub utrs: Vec<Utr>,
-    #[serde(rename = "Exon")]
+    #[serde(rename = "Exon", default)]
     pub exons: Vec<Exon>,
     #[serde(default, rename = "is_canonical")]
     pub canonical: crate::Canonical,
@@ -216,8 +216,8 @@ pub fn translate(seq: &str) -> TranslationConsequence {
 pub fn make_consequences(
     seq: &GenomicSequence,
     transcript: &Transcript,
-    mut start: u32,
-    mut end: u32,
+    start: u32,
+    end: u32,
     variant_allele: &str,
 ) -> Consequences {
     let mut edited_sequence: String = String::default();
