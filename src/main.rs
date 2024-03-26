@@ -1,5 +1,6 @@
 use rs_embl::{sequence::CdnaSequence, vep::VEPAnalysis, Getter};
-#[tokio::main]
+#[cfg_attr(not(target_arch = "wasm32"), tokio::main)]
+#[cfg_attr(target_arch = "wasm32", tokio::main(flavor = "current_thread"))]
 async fn main() {
     let v = Getter::<VEPAnalysis>::new();
     let handles: Vec<_> = ["3:g.46373453_46373484del", "10:g.72346580_72346583dup"]
