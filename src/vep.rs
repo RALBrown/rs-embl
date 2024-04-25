@@ -8,15 +8,14 @@ use thiserror::Error;
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum VEPResult {
-    Success(VEPResponse),
+    Success(VEPAnalysis),
     EnsemblError(crate::api::EnsemblError),
     Error,
 }
 impl VEPResult {
     pub fn input(&self) -> &str {
         match self {
-            VEPResult::Success(VEPResponse::Parseable(analysis)) => &analysis.input,
-            VEPResult::Success(VEPResponse::Unparseable(analysis)) => &analysis.input,
+            VEPResult::Success(analysis) => &analysis.input,
             VEPResult::EnsemblError(error) => &error.input,
             VEPResult::Error => "ERROR",
         }
