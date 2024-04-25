@@ -1,6 +1,6 @@
 //! Structures for the Variant Effect Predictor (VEP) endpoint of the Ensembl API.
 
-use std::str::FromStr;
+use std::{collections::BTreeMap, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -8,20 +8,26 @@ use thiserror::Error;
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum VEPResult {
-    Success(VEPAnalysis),
+    Success(VEPResponse),
     EnsemblError(crate::api::EnsemblError),
     Error,
 }
 impl VEPResult {
     pub fn input(&self) -> &str {
         match self {
-            VEPResult::Success(analysis) => &analysis.input,
+            VEPResult::Success(VEPResponse::Parseable(analysis)) => &analysis.input,
+            VEPResult::Success(VEPResponse::Unparseable(analysis)) => &analysis.input,
             VEPResult::EnsemblError(error) => &error.input,
             VEPResult::Error => "ERROR",
         }
     }
 }
-
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum VEPResponse {
+    Parseable(VEPAnalysis),
+    Unparseable(VEPUnparseable),
+}
 /// A successful VEP analysis result.
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct VEPAnalysis {
@@ -38,6 +44,15 @@ pub struct VEPAnalysis {
     pub allele: Allele,
     #[serde(default)]
     pub transcript_consequences: Vec<TranscriptConsequence>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+pub struct VEPUnparseable {
+    pub input: String,
+    #[serde(default)]
+    pub id: String,
+    #[serde(flatten)]
+    pub fields: BTreeMap<String, String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
