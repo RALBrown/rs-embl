@@ -134,7 +134,7 @@ pub enum Biotype {
     RNase_P_RNA,
     translated_processed_pseudogene,
     antisense_RNA,
-    transcribed_unprocessed_pseudogen,
+    transcribed_unprocessed_pseudogene,
     protein_coding_LoF,
     protein_coding_CDS_not_defined,
     processed_transcript,
