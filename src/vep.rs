@@ -43,7 +43,7 @@ pub struct VEPAnalysis {
     #[serde(rename = "allele_string")]
     pub allele: Allele,
     #[serde(default)]
-    pub transcript_consequences: Vec<TranscriptConsequence>,
+    pub transcript_consequences: Vec<TranscriptConsequenceResponse>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
@@ -54,7 +54,12 @@ pub struct VEPUnparseable {
     #[serde(flatten)]
     pub fields: BTreeMap<String, String>,
 }
-
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum TranscriptConsequenceResponse {
+    Parseable(TranscriptConsequence),
+    Unparseable(UnparseableTranscriptConsequence),
+}
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct TranscriptConsequence {
     pub transcript_id: String,
@@ -76,7 +81,11 @@ pub struct TranscriptConsequence {
     pub exon: Option<String>,
     pub intron: Option<String>,
 }
-
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+pub struct UnparseableTranscriptConsequence {
+    #[serde(flatten)]
+    fields: BTreeMap<String, String>,
+}
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct ProteinConsequence {
     pub hgvsp: String,

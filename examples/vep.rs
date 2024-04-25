@@ -19,9 +19,15 @@ async fn main() -> Result<()> {
                     .into_iter()
                     .map(|transcript| {
                         let client = t.clone();
-                        tokio::spawn(
-                            async move { client.get(transcript.transcript_id.clone()).await },
-                        )
+
+                        match transcript {
+                            rs_embl::vep::TranscriptConsequenceResponse::Parseable(t) => {
+                                tokio::spawn(
+                                    async move { client.get(t.transcript_id.clone()).await },
+                                )
+                            }
+                            rs_embl::vep::TranscriptConsequenceResponse::Unparseable(_) => todo!(),
+                        }
                     })
                     .collect::<Vec<_>>();
                 Some((vep, handles))
