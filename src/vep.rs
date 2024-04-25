@@ -84,7 +84,7 @@ pub struct TranscriptConsequence {
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct UnparseableTranscriptConsequence {
     #[serde(flatten)]
-    fields: BTreeMap<String, String>,
+    pub fields: BTreeMap<String, String>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct ProteinConsequence {
