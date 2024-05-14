@@ -128,7 +128,7 @@ impl crate::EnsemblPostEndpoint for VEPResult {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
-#[serde(try_from = "String")]
+#[serde(try_from = "String", into = "String")]
 pub struct Allele {
     pub normal: String,
     pub variant: String,
@@ -154,6 +154,11 @@ impl FromStr for Allele {
             variant = "".to_owned();
         };
         Ok(Self { normal, variant })
+    }
+}
+impl Into<String> for Allele {
+    fn into(self) -> String {
+        format!("{}-{}", self.normal, self.variant)
     }
 }
 
