@@ -158,7 +158,15 @@ impl FromStr for Allele {
 }
 impl Into<String> for Allele {
     fn into(self) -> String {
-        format!("{}-{}", self.normal, self.variant)
+        let fixed_normal = match &self.normal.is_empty() {
+            true => "-",
+            false => &self.normal,
+        };
+        let fixed_variant = match &self.variant.is_empty() {
+            true => "-",
+            false => &self.variant,
+        };
+        format!("{fixed_normal}/{fixed_variant}",)
     }
 }
 
