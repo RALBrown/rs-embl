@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     sequence::{CdnaSequence, GenomicSequence},
-    Client,
+    Client, Strand,
 };
 
 const LAST_EJC_REGEX: &str = r".+([A-Z][a-z]+[A-Z]+)$";

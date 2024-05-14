@@ -5,7 +5,7 @@ use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash, Serialize, Deserialize)]
-#[serde(from = "i32")]
+#[serde(from = "i32", into = "i32")]
 pub enum Canonical {
     CANONICAL,
     NONCANONICAL,
@@ -13,6 +13,14 @@ pub enum Canonical {
 impl Default for Canonical {
     fn default() -> Self {
         Self::NONCANONICAL
+    }
+}
+impl Into<i32> for Canonical {
+    fn into(self) -> i32 {
+        match &self {
+            Canonical::CANONICAL => 1,
+            Canonical::NONCANONICAL => 0,
+        }
     }
 }
 impl From<i32> for Canonical {
@@ -167,22 +175,20 @@ impl<'de> Deserialize<'de> for Strand {
             where
                 E: de::Error,
             {
-                println!("str{}", value);
                 match value {
                     "+" | "1" => Ok(Strand::PLUS),
                     "-" | "-1" => Ok(Strand::MINUS),
-                    _ => Err(de::Error::unknown_field(value, FIELDS)),
+                    _ => Err(de::Error::unknown_variant(value, FIELDS)),
                 }
             }
-            fn visit_i32<E>(self, value: i32) -> Result<Strand, E>
+            fn visit_i64<E>(self, value: i64) -> Result<Strand, E>
             where
                 E: de::Error,
             {
-                println!("int{}", value);
                 match value {
                     1 => Ok(Strand::PLUS),
                     -1 => Ok(Strand::MINUS),
-                    _ => Err(de::Error::unknown_field(
+                    _ => Err(de::Error::unknown_variant(
                         format!("{value}").as_str(),
                         FIELDS,
                     )),
