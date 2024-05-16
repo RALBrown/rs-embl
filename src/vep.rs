@@ -72,6 +72,8 @@ pub struct TranscriptConsequence {
     pub consequence_terms: Vec<String>,
     #[serde(default)]
     pub canonical: crate::Canonical,
+    #[serde(default)]
+    pub tsl: Option<u8>,
     pub nmd: Option<String>,
     #[serde(flatten)]
     pub protein_consequences: Option<ProteinConsequence>,
@@ -102,7 +104,7 @@ impl crate::EnsemblPostEndpoint for VEPAnalysis {
         "/vep/human/hgvs"
     }
     fn payload_template() -> &'static str {
-        r#"{"hgvs": 1, "numbers": 1, "canonical" : 1, "NMD" : 1, "hgvs_notations" : {ids}}"#
+        r#"{"hgvs": 1, "numbers": 1, "canonical" : 1, "tsl": 1, "NMD" : 1, "hgvs_notations" : {ids}}"#
     }
     fn input(&self) -> &str {
         &self.input
@@ -117,7 +119,7 @@ impl crate::EnsemblPostEndpoint for VEPResult {
         "/vep/human/hgvs"
     }
     fn payload_template() -> &'static str {
-        r#"{"hgvs": 1, "numbers": 1, "canonical" : 1, "NMD" : 1, "hgvs_notations" : {ids}}"#
+        r#"{"hgvs": 1, "numbers": 1, "canonical" : 1, "tsl": 1, "NMD" : 1, "hgvs_notations" : {ids}}"#
     }
     fn input(&self) -> &str {
         self.input()
