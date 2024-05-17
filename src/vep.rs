@@ -5,7 +5,7 @@ use std::{collections::BTreeMap, str::FromStr};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum VEPResult {
     Success(VEPAnalysis),
@@ -21,14 +21,14 @@ impl VEPResult {
         }
     }
 }
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum VEPResponse {
     Parseable(VEPAnalysis),
     Unparseable(VEPUnparseable),
 }
 /// A successful VEP analysis result.
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct VEPAnalysis {
     pub input: String,
     #[serde(default)]
@@ -37,6 +37,8 @@ pub struct VEPAnalysis {
     pub assembly_name: String,
     pub seq_region_name: String,
     pub most_severe_consequence: String,
+    #[serde(default)]
+    pub colocated_variants: Vec<serde_json::Value>,
     pub start: u32,
     pub end: u32,
     #[serde(rename = "allele_string")]
