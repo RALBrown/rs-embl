@@ -98,35 +98,43 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
         if input.is_empty() {
             return;
         }
-        let ids: Vec<&str> = input.keys().map(|s| s.as_str()).take(T::max_post_size()).collect();
-        let payload = T::payload_template().replace(r"{ids}", &json::stringify(ids));
-        let values = client
-            .post(String::from(ENSEMBL_SERVER) + T::extension())
-            .header("Content-Type", "application/json")
-            .header("Accept", "application/json")
-            .body(payload)
-            .send()
-            .await
-            .unwrap()
-            .text()
-            .await
-            .unwrap();
-        let outputs: Vec<T> = if let Ok(outputs) = serde_json::from_str(&values) {
-            outputs
-        } else {
-            if let Ok(e) = serde_json::from_str::<EnsemblTopLevelError>(&values) {
-                eprintln!("Ensembl Error: {}", e.error);
-                return;
-            }
-            if let Ok(outputs) = serde_json::from_str::<HashMap<String, T>>(&values) {
-                outputs.into_values().collect()
+        let mut vals = input.drain();
+        while vals.len() > 0 {
+            let ids = (&mut vals).take(T::max_post_size()).collect::<Vec<_>>();
+            let keys = ids.iter().map(|i| i.0.clone()).collect::<Vec<_>>();
+            let mut map = HashMap::new();
+            ids.into_iter().for_each(|(k, v)| {
+                map.insert(k, v);
+            });
+            let payload = T::payload_template().replace(r"{ids}", &json::stringify(keys));
+            let values = client
+                .post(String::from(ENSEMBL_SERVER) + T::extension())
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .body(payload)
+                .send()
+                .await
+                .unwrap()
+                .text()
+                .await
+                .unwrap();
+            let outputs: Vec<T> = if let Ok(outputs) = serde_json::from_str(&values) {
+                outputs
             } else {
-                panic!("Failed to parse the following response: {}", values);
+                if let Ok(e) = serde_json::from_str::<EnsemblTopLevelError>(&values) {
+                    eprintln!("Ensembl Error: {}", e.error);
+                    return;
+                }
+                if let Ok(outputs) = serde_json::from_str::<HashMap<String, T>>(&values) {
+                    outputs.into_values().collect()
+                } else {
+                    panic!("Failed to parse the following response: {}", values);
+                }
+            };
+            for output in outputs.into_iter() {
+                let target = map.remove(output.input()).unwrap();
+                let _ = target.send(output); //if the sender's not listening that's its problem
             }
-        };
-        for output in outputs.into_iter() {
-            let target = input.remove(output.input()).unwrap();
-            let _ = target.send(output); //if the sender's not listening that's its problem
         }
     }
 
