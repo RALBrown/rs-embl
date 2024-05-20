@@ -84,7 +84,53 @@ pub enum StrandError {
     #[error("`{0}` is not a valid strand designator. Use '1' or '-1'.")]
     InvalidStrandNumber(i32),
 }
-
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[allow(non_camel_case_types)]
+pub enum Consequence {
+    transcript_ablation,
+    splice_acceptor_variant,
+    splice_donor_variant,
+    stop_gained,
+    frameshift_variant,
+    stop_lost,
+    start_lost,
+    transcript_amplification,
+    feature_elongation,
+    feature_truncation,
+    inframe_insertion,
+    inframe_deletion,
+    missense_variant,
+    protein_altering_variant,
+    splice_donor_5th_base_variant,
+    splice_region_variant,
+    splice_donor_region_variant,
+    splice_polypyrimidine_tract_variant,
+    incomplete_terminal_codon_variant,
+    start_retained_variant,
+    stop_retained_variant,
+    synonymous_variant,
+    coding_sequence_variant,
+    mature_miRNA_variant,
+    #[serde(rename = "5_prime_UTR_variant")]
+    five_prime_UTR_variant,
+    #[serde(rename = "3_prime_UTR_variant")]
+    three_prime_UTR_variant,
+    non_coding_transcript_exon_variant,
+    intron_variant,
+    NMD_transcript_variant,
+    non_coding_transcript_variant,
+    coding_transcript_variant,
+    upstream_gene_variant,
+    downstream_gene_variant,
+    TFBS_ablation,
+    TFBS_amplification,
+    TF_binding_site_variant,
+    regulatory_region_ablation,
+    regulatory_region_amplification,
+    regulatory_region_variant,
+    intergenic_variant,
+    sequence_variant,
+}
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
 pub enum Biotype {
