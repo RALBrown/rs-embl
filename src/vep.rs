@@ -37,7 +37,7 @@ pub struct VEPAnalysis {
     pub assembly_name: String,
     pub seq_region_name: String,
     #[serde(default)]
-    pub most_severe_consequence: crate::Consequence,
+    pub most_severe_consequence: String,
     #[serde(default)]
     pub colocated_variants: Vec<serde_json::Value>,
     pub start: u32,
@@ -72,7 +72,7 @@ pub struct TranscriptConsequence {
     pub gene_symbol: String,
     pub biotype: Option<String>,
     #[serde(default)]
-    pub consequence_terms: Vec<crate::Consequence>,
+    pub consequence_terms: Vec<String>,
     #[serde(default)]
     pub canonical: crate::Canonical,
     #[serde(default)]
