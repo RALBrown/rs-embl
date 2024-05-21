@@ -101,6 +101,7 @@ pub enum StrandError {
     Deserialize,
 )]
 #[allow(non_camel_case_types)]
+#[serde(try_from = "&str", into = "String")]
 pub enum Consequence {
     transcript_ablation,
     splice_acceptor_variant,
@@ -150,6 +151,16 @@ pub enum Consequence {
 impl Default for Consequence {
     fn default() -> Self {
         Self::Unknown
+    }
+}
+impl ToString for Consequence {
+    fn to_string(&self) -> String {
+        format!("{self:?}")
+    }
+}
+impl Into<String> for Consequence {
+    fn into(self) -> String {
+        format!("{self:?}")
     }
 }
 

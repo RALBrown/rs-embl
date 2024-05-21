@@ -37,7 +37,7 @@ pub struct VEPAnalysis {
     pub assembly_name: String,
     pub seq_region_name: String,
     #[serde(default)]
-    pub most_severe_consequence: String,
+    pub most_severe_consequence: crate::Consequence,
     #[serde(default)]
     pub colocated_variants: Vec<serde_json::Value>,
     pub start: u32,
