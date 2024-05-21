@@ -88,6 +88,7 @@ pub enum StrandError {
 #[derive(
     EnumIter,
     strum_macros::EnumString,
+    strum::Display,
     Debug,
     Copy,
     Clone,
@@ -126,11 +127,15 @@ pub enum Consequence {
     synonymous_variant,
     coding_sequence_variant,
     mature_miRNA_variant,
-    #[serde(rename = "5_prime_UTR_variant")]
-    #[strum(to_string = "5_prime_UTR_variant")]
+    #[strum(
+        serialize = "5_prime_UTR_variant",
+        serialize = "five_prime_UTR_variant"
+    )]
     five_prime_UTR_variant,
-    #[serde(rename = "3_prime_UTR_variant")]
-    #[strum(to_string = "3_prime_UTR_variant")]
+    #[strum(
+        serialize = "3_prime_UTR_variant",
+        serialize = "three_prime_UTR_variant"
+    )]
     three_prime_UTR_variant,
     non_coding_transcript_exon_variant,
     intron_variant,
@@ -157,7 +162,7 @@ impl Default for Consequence {
 
 impl Into<String> for Consequence {
     fn into(self) -> String {
-        format!("{self:?}")
+        format!("{self}")
     }
 }
 
