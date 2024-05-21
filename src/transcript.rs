@@ -227,11 +227,24 @@ pub fn make_consequences(
     let mut edited_sequence: String = String::default();
     let upstream;
     let downstream;
-
     if transcript.strand == 1 {
+        if start < transcript.start {
+            if end > transcript.start {
+                return Consequences::LostStart;
+            } else {
+                return Consequences::FivePrimeUTR;
+            }
+        }
         upstream = &seq.seq[..(start - transcript.start) as usize];
         downstream = &seq.seq[(end - transcript.start + 1) as usize..];
     } else {
+        if end > transcript.end {
+            if start < transcript.end {
+                return Consequences::LostStart;
+            } else {
+                return Consequences::FivePrimeUTR;
+            }
+        }
         upstream = &seq.seq[..(transcript.end - end) as usize];
         downstream = &seq.seq[(transcript.end - start + 1) as usize..];
     }
@@ -281,6 +294,8 @@ pub fn make_consequences(
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub enum Consequences {
     DisruptedSpliceSite,
+    LostStart,
+    FivePrimeUTR,
     Coding {
         edited_genomic_sequence: String,
         edited_protein_sequence: TranslationConsequence,
