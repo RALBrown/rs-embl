@@ -118,17 +118,19 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
                 .text()
                 .await
                 .unwrap();
-            let outputs: Vec<T> = if let Ok(outputs) = serde_json::from_str(&values) {
-                outputs
-            } else {
-                if let Ok(e) = serde_json::from_str::<EnsemblTopLevelError>(&values) {
-                    eprintln!("Ensembl Error: {}", e.error);
-                    return;
-                }
-                match serde_json::from_str::<HashMap<String, T>>(&values) {
-                    Ok(outputs) => outputs.into_values().collect(),
-                    Err(e) => {
-                        panic!("Failed to parse the following response: {}\n{e:?}", values,);
+            let outputs: Vec<T> = match serde_json::from_str(&values) {
+                Ok(outputs) => outputs,
+                Err(err) => {
+                    eprintln!("{err}");
+                    if let Ok(e) = serde_json::from_str::<EnsemblTopLevelError>(&values) {
+                        eprintln!("Ensembl Error: {}", e.error);
+                        return;
+                    }
+                    match serde_json::from_str::<HashMap<String, T>>(&values) {
+                        Ok(outputs) => outputs.into_values().collect(),
+                        Err(e) => {
+                            panic!("Failed to parse the following response: {}\n{e:?}", values,);
+                        }
                     }
                 }
             };

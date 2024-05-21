@@ -72,7 +72,7 @@ pub struct TranscriptConsequence {
     pub gene_symbol: String,
     pub biotype: Option<crate::Biotype>,
     #[serde(default)]
-    pub consequence_terms: Vec<crate::Consequence>,
+    pub consequence_terms: Vec<String>,
     #[serde(default)]
     pub canonical: crate::Canonical,
     #[serde(default)]
