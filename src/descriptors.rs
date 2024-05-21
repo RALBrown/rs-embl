@@ -87,7 +87,6 @@ pub enum StrandError {
 }
 #[derive(
     EnumIter,
-    strum::FromRepr,
     strum_macros::EnumString,
     Debug,
     Copy,
@@ -153,11 +152,7 @@ impl Default for Consequence {
         Self::Unknown
     }
 }
-impl ToString for Consequence {
-    fn to_string(&self) -> String {
-        format!("{self:?}")
-    }
-}
+
 impl Into<String> for Consequence {
     fn into(self) -> String {
         format!("{self:?}")
@@ -165,8 +160,20 @@ impl Into<String> for Consequence {
 }
 
 #[derive(
-    EnumIter, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+    EnumIter,
+    strum_macros::EnumString,
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
 )]
+#[serde(try_from = "&str", into = "String")]
 #[allow(non_camel_case_types)]
 pub enum Biotype {
     TR_V_gene,
@@ -234,6 +241,11 @@ pub enum Biotype {
 impl Default for Biotype {
     fn default() -> Self {
         Self::Unknown
+    }
+}
+impl Into<String> for Biotype {
+    fn into(self) -> String {
+        format!("{self:?}")
     }
 }
 
