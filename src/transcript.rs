@@ -228,21 +228,25 @@ pub fn make_consequences(
     let upstream;
     let downstream;
     if transcript.strand == 1 {
-        if start < transcript.start {
-            if end > transcript.start {
-                return Consequences::LostStart;
-            } else {
-                return Consequences::FivePrimeUTR;
+        if let Some(translation) = &transcript.translation {
+            if start < translation.start {
+                if end > translation.start {
+                    return Consequences::LostStart;
+                } else {
+                    return Consequences::FivePrimeUTR;
+                }
             }
         }
         upstream = &seq.seq[..(start - transcript.start) as usize];
         downstream = &seq.seq[(end - transcript.start + 1) as usize..];
     } else {
-        if end > transcript.end {
-            if start < transcript.end {
-                return Consequences::LostStart;
-            } else {
-                return Consequences::FivePrimeUTR;
+        if let Some(translation) = &transcript.translation {
+            if end > translation.end {
+                if start < translation.end {
+                    return Consequences::LostStart;
+                } else {
+                    return Consequences::FivePrimeUTR;
+                }
             }
         }
         upstream = &seq.seq[..(transcript.end - end) as usize];
