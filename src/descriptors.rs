@@ -126,11 +126,11 @@ pub enum Consequence {
     synonymous_variant,
     coding_sequence_variant,
     mature_miRNA_variant,
-    #[serde(alias = "5_prime_UTR_variant")]
-    #[strum(serialize = "5_prime_UTR_variant")]
+    #[serde(rename = "5_prime_UTR_variant")]
+    #[strum(to_string = "5_prime_UTR_variant")]
     five_prime_UTR_variant,
-    #[serde(alias = "3_prime_UTR_variant")]
-    #[strum(serialize = "3_prime_UTR_variant")]
+    #[serde(rename = "3_prime_UTR_variant")]
+    #[strum(to_string = "3_prime_UTR_variant")]
     three_prime_UTR_variant,
     non_coding_transcript_exon_variant,
     intron_variant,
