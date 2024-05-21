@@ -88,6 +88,7 @@ pub enum StrandError {
 #[derive(
     EnumIter,
     strum::FromRepr,
+    strum_macros::EnumString,
     Debug,
     Copy,
     Clone,
