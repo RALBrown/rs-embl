@@ -125,10 +125,11 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
                     eprintln!("Ensembl Error: {}", e.error);
                     return;
                 }
-                if let Ok(outputs) = serde_json::from_str::<HashMap<String, T>>(&values) {
-                    outputs.into_values().collect()
-                } else {
-                    panic!("Failed to parse the following response: {}", values);
+                match serde_json::from_str::<HashMap<String, T>>(&values) {
+                    Ok(outputs) => outputs.into_values().collect(),
+                    Err(e) => {
+                        panic!("Failed to parse the following response: {}\n{e:?}", values,);
+                    }
                 }
             };
             for output in outputs.into_iter() {
