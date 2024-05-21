@@ -2,6 +2,7 @@ use serde::de::{self, Deserializer, Visitor};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
+use strum_macros::EnumIter;
 use thiserror::Error;
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash, Serialize, Deserialize)]
@@ -84,7 +85,9 @@ pub enum StrandError {
     #[error("`{0}` is not a valid strand designator. Use '1' or '-1'.")]
     InvalidStrandNumber(i32),
 }
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(
+    EnumIter, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+)]
 #[allow(non_camel_case_types)]
 pub enum Consequence {
     transcript_ablation,
@@ -130,8 +133,17 @@ pub enum Consequence {
     regulatory_region_variant,
     intergenic_variant,
     sequence_variant,
+    Unknown,
 }
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+impl Default for Consequence {
+    fn default() -> Self {
+        Self::Unknown
+    }
+}
+
+#[derive(
+    EnumIter, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+)]
 #[allow(non_camel_case_types)]
 pub enum Biotype {
     TR_V_gene,
