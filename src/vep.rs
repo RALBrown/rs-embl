@@ -10,14 +10,17 @@ use thiserror::Error;
 pub enum VEPResult {
     Success(VEPAnalysis),
     EnsemblError(crate::api::EnsemblError),
-    Error,
+    Error(serde_json::Value),
 }
 impl VEPResult {
     pub fn input(&self) -> &str {
         match self {
             VEPResult::Success(analysis) => &analysis.input,
             VEPResult::EnsemblError(error) => &error.input,
-            VEPResult::Error => "ERROR",
+            VEPResult::Error(v) => match v.get("input") {
+                Some(s) => s.as_str().unwrap_or("VALUE_ERROR"),
+                _ => "ERROR",
+            },
         }
     }
 }

@@ -121,7 +121,11 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
             let outputs: Vec<T> = match serde_json::from_str(&values) {
                 Ok(outputs) => outputs,
                 Err(err) => {
-                    eprintln!("{err}");
+                    if format!("{err}").as_str()
+                        != "invalid type: map, expected a sequence at line 1 column 0"
+                    {
+                        eprintln!("{err}");
+                    }
                     if let Ok(e) = serde_json::from_str::<EnsemblTopLevelError>(&values) {
                         eprintln!("Ensembl Error: {}", e.error);
                         return;
