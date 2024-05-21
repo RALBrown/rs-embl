@@ -86,7 +86,18 @@ pub enum StrandError {
     InvalidStrandNumber(i32),
 }
 #[derive(
-    EnumIter, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+    EnumIter,
+    strum::FromRepr,
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
 )]
 #[allow(non_camel_case_types)]
 pub enum Consequence {
