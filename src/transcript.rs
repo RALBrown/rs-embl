@@ -244,8 +244,8 @@ pub fn make_consequences(
         }
         (false, false) => {}
     }
-    if transcript.strand == 1 {
-        if let Some(translation) = &transcript.translation {
+    if let Some(translation) = &transcript.translation {
+        if transcript.strand == 1 {
             if start < translation.start {
                 if end > translation.start {
                     return Consequences::LostStart;
