@@ -88,6 +88,7 @@ pub enum StrandError {
 #[derive(
     EnumIter,
     strum_macros::EnumString,
+    strum_macros::IntoStaticStr,
     strum::Display,
     Debug,
     Copy,
@@ -169,6 +170,7 @@ impl Into<String> for Consequence {
 #[derive(
     EnumIter,
     strum_macros::EnumString,
+    strum_macros::IntoStaticStr,
     Debug,
     Copy,
     Clone,
