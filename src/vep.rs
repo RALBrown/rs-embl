@@ -49,6 +49,8 @@ pub struct VEPAnalysis {
     pub allele: Allele,
     #[serde(default)]
     pub transcript_consequences: Vec<TranscriptConsequenceResponse>,
+    #[serde(default)]
+    pub regulatory_feature_consequencess: Vec<RegulatoryConsequence>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
@@ -104,6 +106,14 @@ pub struct ProteinConsequence {
     pub protein_end: u32,
     pub codons: String,
     pub amino_acids: String,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[serde(default)]
+pub struct RegulatoryConsequence {
+    regulatory_feature_id: String,
+    biotype: String,
+    consequence_terms: Vec<crate::Consequence>,
 }
 
 impl crate::EnsemblPostEndpoint for VEPAnalysis {
