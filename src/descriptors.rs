@@ -166,7 +166,48 @@ impl Into<String> for Consequence {
         format!("{self}")
     }
 }
-
+#[derive(
+    EnumIter,
+    strum_macros::EnumString,
+    strum_macros::IntoStaticStr,
+    strum::Display,
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+)]
+#[allow(non_camel_case_types)]
+#[serde(try_from = "&str", into = "String")]
+pub enum HighInfPos {
+    Y,
+    N,
+    null,
+}
+impl Default for HighInfPos {
+    fn default() -> Self {
+        Self::null
+    }
+}
+impl Into<String> for HighInfPos {
+    fn into(self) -> String {
+        format!("{self}")
+    }
+}
+impl Into<bool> for HighInfPos {
+    fn into(self) -> bool {
+        match self {
+            HighInfPos::Y => true,
+            HighInfPos::N => false,
+            HighInfPos::null => false,
+        }
+    }
+}
 #[derive(
     EnumIter,
     strum_macros::EnumString,

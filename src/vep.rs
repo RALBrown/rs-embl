@@ -51,6 +51,8 @@ pub struct VEPAnalysis {
     pub transcript_consequences: Vec<TranscriptConsequenceResponse>,
     #[serde(default)]
     pub regulatory_feature_consequencess: Vec<RegulatoryConsequence>,
+    #[serde(default)]
+    pub motif_feature_consequencess: Vec<MotifConsequence>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
@@ -114,6 +116,18 @@ pub struct RegulatoryConsequence {
     regulatory_feature_id: String,
     biotype: String,
     consequence_terms: Vec<crate::Consequence>,
+}
+#[derive(Debug, Default, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[serde(default)]
+pub struct MotifConsequence {
+    motif_feature_id: String,
+    motif_name: String,
+    high_inf_pos: crate::HighInfPos,
+    consequence_terms: Vec<crate::Consequence>,
+    transcription_factors: Vec<String>,
+    strand: i8,
+    variant_allele: String,
+    motif_pos: u16,
 }
 
 impl crate::EnsemblPostEndpoint for VEPAnalysis {
