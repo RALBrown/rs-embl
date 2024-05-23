@@ -50,9 +50,9 @@ pub struct VEPAnalysis {
     #[serde(default)]
     pub transcript_consequences: Vec<TranscriptConsequenceResponse>,
     #[serde(default)]
-    pub regulatory_feature_consequencess: Vec<RegulatoryConsequence>,
+    pub regulatory_feature_consequences: Vec<RegulatoryConsequence>,
     #[serde(default)]
-    pub motif_feature_consequencess: Vec<MotifConsequence>,
+    pub motif_feature_consequences: Vec<MotifConsequence>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
