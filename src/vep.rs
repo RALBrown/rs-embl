@@ -113,21 +113,21 @@ pub struct ProteinConsequence {
 #[derive(Debug, Default, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(default)]
 pub struct RegulatoryConsequence {
-    regulatory_feature_id: String,
-    biotype: String,
-    consequence_terms: Vec<crate::Consequence>,
+    pub regulatory_feature_id: String,
+    pub biotype: String,
+    pub consequence_terms: Vec<crate::Consequence>,
 }
 #[derive(Debug, Default, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(default)]
 pub struct MotifConsequence {
-    motif_feature_id: String,
-    motif_name: String,
-    high_inf_pos: crate::HighInfPos,
-    consequence_terms: Vec<crate::Consequence>,
-    transcription_factors: Vec<String>,
-    strand: i8,
-    variant_allele: String,
-    motif_pos: u16,
+    pub motif_feature_id: String,
+    pub motif_name: String,
+    pub high_inf_pos: crate::HighInfPos,
+    pub consequence_terms: Vec<crate::Consequence>,
+    pub transcription_factors: Vec<String>,
+    pub strand: i8,
+    pub variant_allele: String,
+    pub motif_pos: u16,
 }
 
 impl crate::EnsemblPostEndpoint for VEPAnalysis {
