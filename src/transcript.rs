@@ -252,13 +252,13 @@ pub fn make_consequences(
                 } else {
                     return Consequences::FivePrimeUTR;
                 }
-            } else {
-                if end > translation.end {
-                    if start < translation.end {
-                        return Consequences::LostStart;
-                    } else {
-                        return Consequences::FivePrimeUTR;
-                    }
+            }
+        } else {
+            if end > translation.end {
+                if start < translation.end {
+                    return Consequences::LostStart;
+                } else {
+                    return Consequences::FivePrimeUTR;
                 }
             }
         }
