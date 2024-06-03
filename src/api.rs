@@ -230,7 +230,7 @@ impl<'a, T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Client<'a, 
             Ok(t) => t,
             Err(e) => Err(EnsemblError {
                 input: id,
-                error: format!("{e:?}"),
+                error: e.to_string(),
             }),
         }
     }
