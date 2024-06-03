@@ -20,7 +20,7 @@
 //!     })
 //!     .collect();
 //! for h in handles.into_iter() {
-//!     let vep: Option<VEPAnalysis> = h.await.unwrap();
+//!     let vep = h.await.unwrap();
 //!     println!("{:#?}", vep.unwrap());
 //! }
 //! # });

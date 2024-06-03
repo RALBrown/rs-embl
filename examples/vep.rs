@@ -11,7 +11,7 @@ async fn main() -> Result<()> {
             let v = vep_getter.client();
             let t = transcript_getter.client();
             tokio::spawn(async move {
-                let Some(vep) = v.get((*id).to_owned()).await else {
+                let Ok(vep) = v.get((*id).to_owned()).await else {
                     return None;
                 };
                 let consequences = vep.transcript_consequences.clone();
@@ -40,7 +40,7 @@ async fn main() -> Result<()> {
         };
         println!("{:#?}", vep);
         for tc in tcs {
-            let Some(tc) = tc.await.unwrap() else {
+            let Ok(tc) = tc.await.unwrap() else {
                 continue;
             };
             println!("{:#?}", tc);

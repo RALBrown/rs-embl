@@ -1,7 +1,7 @@
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-
+use thiserror::Error;
 use tokio::sync::mpsc;
 use tokio::time::{sleep, Duration};
 
@@ -34,7 +34,7 @@ const ENSEMBL_SERVER: &str = r#"https://rest.ensembl.org"#;
 ///     })
 ///     .collect();
 /// for h in handles.into_iter() {
-///     let vep: Option<VEPAnalysis> = h.await.unwrap();
+///     let vep = h.await.unwrap();
 ///     println!("{:#?}", vep.unwrap());
 /// }
 /// # });
@@ -43,7 +43,10 @@ const ENSEMBL_SERVER: &str = r#"https://rest.ensembl.org"#;
 #[derive(Debug)]
 pub struct Getter<T: EnsemblPostEndpoint + Send + DeserializeOwned> {
     //is_alive: Arc<AtomicBool>,
-    tx: mpsc::Sender<(String, tokio::sync::oneshot::Sender<Option<T>>)>,
+    tx: mpsc::Sender<(
+        String,
+        tokio::sync::oneshot::Sender<Result<T, EnsemblError>>,
+    )>,
 }
 
 impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Default for Getter<T> {
@@ -55,7 +58,10 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Default for Get
 impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
     /// Create a new Getter object to return T from Enseble REST endpoint.
     pub fn new() -> Self {
-        let (tx, mut rx) = mpsc::channel::<(String, tokio::sync::oneshot::Sender<Option<T>>)>(500);
+        let (tx, mut rx) = mpsc::channel::<(
+            String,
+            tokio::sync::oneshot::Sender<Result<T, EnsemblError>>,
+        )>(500);
         {
             #[cfg(not(target_arch = "wasm32"))]
             let client = reqwest::Client::new();
@@ -92,7 +98,7 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
     }
 
     async fn process(
-        mut input: HashMap<String, tokio::sync::oneshot::Sender<Option<T>>>,
+        mut input: HashMap<String, tokio::sync::oneshot::Sender<Result<T, EnsemblError>>>,
         client: &reqwest::Client,
     ) {
         if input.is_empty() {
@@ -140,10 +146,10 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
             };
             for output in outputs.into_iter() {
                 let target = map.remove(output.input()).unwrap();
-                let _ = target.send(Some(output)); //if the sender's not listening that's its problem
+                let _ = target.send(Ok(output)); //if the sender's not listening that's its problem
             }
-            for untouched in map.into_values() {
-                untouched.send(None);
+            for (id, sender) in map.into_iter() {
+                let _ = sender.send(Err(EnsemblError{ error: format!("The input {id} did not give results usually this means that it is not formated correctly.") , input: id,  }));
             }
         }
     }
@@ -200,7 +206,10 @@ impl<'a, T: 'a + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
 /// * Unlike the [Getter], [Client] implements [Send]. Thus, it is usually created in the parent task then passed to workers.
 #[derive(Debug, Clone)]
 pub struct Client<'a, T: EnsemblPostEndpoint + Send + DeserializeOwned> {
-    tx: mpsc::Sender<(String, tokio::sync::oneshot::Sender<Option<T>>)>,
+    tx: mpsc::Sender<(
+        String,
+        tokio::sync::oneshot::Sender<Result<T, EnsemblError>>,
+    )>,
     getter: std::marker::PhantomData<&'a Getter<T>>,
 }
 impl<'a, T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Client<'a, T> {
@@ -209,9 +218,9 @@ impl<'a, T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Client<'a, 
     /// # Panics
     ///
     /// Panics if the [Getter] has dropped, or the undelying channel has closed.
-    pub async fn get(self, id: String) -> Option<T> {
+    pub async fn get(self, id: String) -> Result<T, EnsemblError> {
         let (tx, rx) = tokio::sync::oneshot::channel();
-        if let Err(err) = self.tx.send((id, tx)).await {
+        if let Err(err) = self.tx.send((id.clone(), tx)).await {
             panic!(
                 "Getter was closed or dropped recieving request: {}",
                 err.0 .0
@@ -219,7 +228,10 @@ impl<'a, T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Client<'a, 
         }; // If the channel has closed, we can ignore the result
         match rx.await {
             Ok(t) => t,
-            Err(_) => None,
+            Err(_) => Err(EnsemblError {
+                input: id,
+                error: "Error outside of Ensembl".to_owned(),
+            }),
         }
     }
 }
@@ -245,7 +257,8 @@ pub struct EnsemblTopLevelError {
     pub error: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Error, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[error("Error accessing Ensembl data. Ensembl gave this response:\n{error}")]
 pub struct EnsemblError {
     pub input: String,
     pub error: String,

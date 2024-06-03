@@ -21,7 +21,7 @@ async fn main() {
         .collect();
     drop(v2);
     for h in handles.into_iter() {
-        let vep: Option<VEPAnalysis> = h.await.unwrap();
+        let vep: Result<VEPAnalysis, rs_embl::EnsemblError> = h.await.unwrap();
         println!("{:#?}", vep.unwrap());
     }
     for h in handles2.into_iter() {
