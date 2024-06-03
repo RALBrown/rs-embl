@@ -43,7 +43,7 @@ const ENSEMBL_SERVER: &str = r#"https://rest.ensembl.org"#;
 #[derive(Debug)]
 pub struct Getter<T: EnsemblPostEndpoint + Send + DeserializeOwned> {
     //is_alive: Arc<AtomicBool>,
-    tx: mpsc::Sender<(String, tokio::sync::oneshot::Sender<T>)>,
+    tx: mpsc::Sender<(String, tokio::sync::oneshot::Sender<Option<T>>)>,
 }
 
 impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Default for Getter<T> {
@@ -55,7 +55,7 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Default for Get
 impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
     /// Create a new Getter object to return T from Enseble REST endpoint.
     pub fn new() -> Self {
-        let (tx, mut rx) = mpsc::channel::<(String, tokio::sync::oneshot::Sender<T>)>(500);
+        let (tx, mut rx) = mpsc::channel::<(String, tokio::sync::oneshot::Sender<Option<T>>)>(500);
         {
             #[cfg(not(target_arch = "wasm32"))]
             let client = reqwest::Client::new();
@@ -92,7 +92,7 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
     }
 
     async fn process(
-        mut input: HashMap<String, tokio::sync::oneshot::Sender<T>>,
+        mut input: HashMap<String, tokio::sync::oneshot::Sender<Option<T>>>,
         client: &reqwest::Client,
     ) {
         if input.is_empty() {
@@ -140,7 +140,10 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
             };
             for output in outputs.into_iter() {
                 let target = map.remove(output.input()).unwrap();
-                let _ = target.send(output); //if the sender's not listening that's its problem
+                let _ = target.send(Some(output)); //if the sender's not listening that's its problem
+            }
+            for untouched in map.into_values() {
+                untouched.send(None);
             }
         }
     }
@@ -197,7 +200,7 @@ impl<'a, T: 'a + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
 /// * Unlike the [Getter], [Client] implements [Send]. Thus, it is usually created in the parent task then passed to workers.
 #[derive(Debug, Clone)]
 pub struct Client<'a, T: EnsemblPostEndpoint + Send + DeserializeOwned> {
-    tx: mpsc::Sender<(String, tokio::sync::oneshot::Sender<T>)>,
+    tx: mpsc::Sender<(String, tokio::sync::oneshot::Sender<Option<T>>)>,
     getter: std::marker::PhantomData<&'a Getter<T>>,
 }
 impl<'a, T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Client<'a, T> {
@@ -214,7 +217,10 @@ impl<'a, T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Client<'a, 
                 err.0 .0
             )
         }; // If the channel has closed, we can ignore the result
-        rx.await.ok()
+        match rx.await {
+            Ok(t) => t,
+            Err(_) => None,
+        }
     }
 }
 
