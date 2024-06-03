@@ -228,9 +228,9 @@ impl<'a, T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Client<'a, 
         }; // If the channel has closed, we can ignore the result
         match rx.await {
             Ok(t) => t,
-            Err(_) => Err(EnsemblError {
+            Err(e) => Err(EnsemblError {
                 input: id,
-                error: "Error outside of Ensembl".to_owned(),
+                error: format!("{e:?}"),
             }),
         }
     }
