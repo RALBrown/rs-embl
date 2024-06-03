@@ -133,7 +133,12 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
                         eprintln!("{err}");
                     }
                     if let Ok(e) = serde_json::from_str::<EnsemblTopLevelError>(&values) {
-                        eprintln!("Ensembl Error: {}", e.error);
+                        for (id, sender) in map.into_iter() {
+                            let _ = sender.send(Err(EnsemblError {
+                                error: format!("Ensembl Error: {}", e.error),
+                                input: id,
+                            }));
+                        }
                         return;
                     }
                     match serde_json::from_str::<HashMap<String, T>>(&values) {
