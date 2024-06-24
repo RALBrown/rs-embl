@@ -8,7 +8,7 @@ use crate::{
 };
 
 const LAST_EJC_REGEX: &str = r".+([A-Z][a-z]+[A-Z]+)$";
-
+const EMPTY_STR: &str = "";
 /**
 
 */
@@ -228,11 +228,17 @@ pub fn make_consequences(
     let upstream;
     let downstream;
     if transcript.strand == 1 {
-        upstream = &seq.seq[..(start - transcript.start) as usize];
-        downstream = &seq.seq[(end - transcript.start + 1) as usize..];
+        upstream = &seq.seq[..usize::min((start - transcript.start) as usize, seq.seq.len())];
+        downstream = seq
+            .seq
+            .get((end - transcript.start + 1) as usize..)
+            .unwrap_or(EMPTY_STR);
     } else {
-        upstream = &seq.seq[..(transcript.end - end) as usize];
-        downstream = &seq.seq[(transcript.end - start + 1) as usize..];
+        upstream = &seq.seq[..usize::min((transcript.end - end) as usize, seq.seq.len())];
+        downstream = seq
+            .seq
+            .get((transcript.end - start + 1) as usize..)
+            .unwrap_or(EMPTY_STR);
     }
     match (
         downstream.chars().next().unwrap().is_lowercase(),
