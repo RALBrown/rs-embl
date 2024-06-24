@@ -240,6 +240,9 @@ pub fn make_consequences(
             .get((transcript.end - start + 1) as usize..)
             .unwrap_or(EMPTY_STR);
     }
+    if downstream.is_empty() {
+        return Consequences::DisruptedSpliceSite;
+    }
     match (
         downstream.chars().next().unwrap().is_lowercase(),
         upstream.chars().last().unwrap().is_lowercase(),
