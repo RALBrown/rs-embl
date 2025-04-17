@@ -1,7 +1,7 @@
 //! Structures for the Sequence endpoint of the Ensembl API.
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct CdnaSequence {
     pub query: String,
     pub id: String,
@@ -9,7 +9,7 @@ pub struct CdnaSequence {
     pub seq: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct GenomicSequence {
     pub query: String,
     pub id: String,
@@ -17,7 +17,7 @@ pub struct GenomicSequence {
     pub seq: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct CodingSequence {
     pub query: String,
     pub id: String,

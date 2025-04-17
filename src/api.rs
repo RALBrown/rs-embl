@@ -104,58 +104,161 @@ impl<T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Getter<T> {
         if input.is_empty() {
             return;
         }
-        let mut vals = input.drain();
-        while vals.len() > 0 {
-            let ids = (&mut vals).take(T::max_post_size()).collect::<Vec<_>>();
-            let keys = ids.iter().map(|i| i.0.clone()).collect::<Vec<_>>();
-            let mut map = HashMap::new();
-            ids.into_iter().for_each(|(k, v)| {
-                map.insert(k, v);
-            });
-            let payload = T::payload_template().replace(r"{ids}", &json::stringify(keys));
-            let values = client
+        let mut map = HashMap::new();
+        input.drain().into_iter().for_each(|(k, v)| {
+            map.insert(k, v);
+        });
+        let mut ids_vec = map.keys().map(|s| s.clone()).collect::<Vec<_>>();
+
+        while ids_vec.len() > 0 {
+            let keys = ids_vec
+                .drain(..usize::min(ids_vec.len(), T::max_post_size()))
+                .collect::<Vec<_>>();
+            let payload = T::payload_template().replace(r"{ids}", &json::stringify(keys.clone()));
+            let response = client
                 .post(String::from(ENSEMBL_SERVER) + T::extension())
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
                 .body(payload)
                 .send()
                 .await
-                .unwrap()
-                .text()
-                .await
                 .unwrap();
-            let outputs: Vec<T> = match serde_json::from_str(&values) {
-                Ok(outputs) => outputs,
-                Err(err) => {
-                    if format!("{err}").as_str()
-                        != "invalid type: map, expected a sequence at line 1 column 0"
-                    {
-                        eprintln!("{err}");
-                    }
-                    if let Ok(e) = serde_json::from_str::<EnsemblTopLevelError>(&values) {
-                        for (id, sender) in map.into_iter() {
-                            let _ = sender.send(Err(EnsemblError {
-                                error: format!("Ensembl Error: {}", e.error),
-                                input: id,
-                            }));
+            match response.status().as_u16() {
+                200 => {
+                    let values = response.text().await.unwrap();
+                    let outputs: Vec<T> = match serde_json::from_str(&values) {
+                        Ok(outputs) => outputs,
+                        Err(err) => {
+                            if format!("{err}").as_str()
+                                != "invalid type: map, expected a sequence at line 1 column 0"
+                            {
+                                eprintln!("{err}");
+                            }
+                            match serde_json::from_str::<HashMap<String, T>>(&values) {
+                                Ok(outputs) => outputs.into_values().collect(),
+                                Err(e) => {
+                                    panic!(
+                                        "Failed to parse the following response: {}\n{e:?}",
+                                        values,
+                                    );
+                                }
+                            }
                         }
-                        return;
-                    }
-                    match serde_json::from_str::<HashMap<String, T>>(&values) {
-                        Ok(outputs) => outputs.into_values().collect(),
-                        Err(e) => {
-                            panic!("Failed to parse the following response: {}\n{e:?}", values,);
-                        }
+                    };
+                    for output in outputs.into_iter() {
+                        let target = map.remove(output.input()).unwrap();
+                        let _ = target.send(Ok(output));
                     }
                 }
-            };
-            for output in outputs.into_iter() {
-                let target = map.remove(output.input()).unwrap();
-                let _ = target.send(Ok(output)); //if the sender's not listening that's its problem
+                400 => {
+                    let error_message = response
+                        .text()
+                        .await
+                        .unwrap_or("No detail included".to_string());
+                    eprintln!("Bad Request: {error_message}");
+                    for id in keys.into_iter() {
+                        let _ = map.remove(&id).unwrap().send(Err(EnsemblError {
+                            status_code: 400,
+                            error: format!("Bad Request: {error_message}"),
+                            input: id,
+                        }));
+                    }
+                }
+                403 => {
+                    eprintln!(
+                        "403 Forbidden: Too many requests. Waiting for 5 mins before trying again"
+                    );
+                    for id in keys.into_iter() {
+                        let _ = map.remove(&id).unwrap().send(Err(EnsemblError {
+                            status_code: 403,
+                            error: format!("403 Forbidden: Too many requests."),
+                            input: id,
+                        }));
+                    }
+                    sleep(Duration::from_secs(300)).await;
+                }
+                404 => {
+                    eprintln!("Not Found: Check your URL or request format.");
+                    for id in keys.into_iter() {
+                        let _ = map.remove(&id).unwrap().send(Err(EnsemblError {
+                            status_code: 404,
+                            error: "Not Found: Badly formatted request.".to_string(),
+                            input: id,
+                        }));
+                    }
+                }
+                408 => {
+                    eprintln!("Request Timeout. Pausing requests for 1 minute");
+                    for id in keys.into_iter() {
+                        let _ = map.remove(&id).unwrap().send(Err(EnsemblError {
+                            status_code: 408,
+                            error: "Request Timeout. Pausing requests for 1 minute".to_string(),
+                            input: id,
+                        }));
+                    }
+                    sleep(Duration::from_secs(60)).await;
+                }
+                429 => {
+                    let reset_time = response
+                        .headers()
+                        .get("X-RateLimit-Reset")
+                        .and_then(|v| v.to_str().ok())
+                        .and_then(|v| v.parse::<u64>().ok())
+                        .unwrap_or(60); // Default to 60 seconds if header is missing
+                    eprintln!(
+                        "Too Many Requests: Rate limit resets in {reset_time} seconds. Waiting..."
+                    );
+                    for id in keys.into_iter() {
+                        let _ = map.remove(&id).unwrap().send(Err(EnsemblError {
+                            status_code: 429,
+                            error: format!(
+                                "Too Many Requests: Rate limit resets in {reset_time} seconds."
+                            ),
+                            input: id,
+                        }));
+                    }
+                    sleep(Duration::from_secs(reset_time)).await;
+                }
+                502 => {
+                    eprintln!("Bad Gateway: Retrying after a pause...");
+                    for id in keys.into_iter() {
+                        let _ = map.remove(&id).unwrap().send(Err(EnsemblError {
+                            status_code: 502,
+                            error: "Bad gateway.".to_string(),
+                            input: id,
+                        }));
+                    }
+                    sleep(Duration::from_secs(10)).await;
+                }
+                503 => {
+                    eprintln!("Service Unavailable: Retrying after a pause...");
+                    for id in keys.into_iter() {
+                        let _ = map.remove(&id).unwrap().send(Err(EnsemblError {
+                            status_code: 503,
+                            error: "Service Unavailable.".to_string(),
+                            input: id,
+                        }));
+                    }
+                    sleep(Duration::from_secs(10)).await;
+                }
+                status => {
+                    let error_message = response
+                        .text()
+                        .await
+                        .unwrap_or("No detail included".to_string());
+                    eprintln!("Unexpected status code {status}: {}", &error_message);
+                    for id in keys.into_iter() {
+                        let _ = map.remove(&id).unwrap().send(Err(EnsemblError {
+                            status_code: status as i16,
+                            error: error_message.clone(),
+                            input: id,
+                        }));
+                    }
+                }
             }
-            for (id, sender) in map.into_iter() {
-                let _ = sender.send(Err(EnsemblError{ error: format!("The input {id} did not give results usually this means that it is not formated correctly.") , input: id,  }));
-            }
+        }
+        for (id, sender) in &mut map.drain() {
+            let _ = sender.send(Err(EnsemblError{ status_code: 404, error: format!("The input {id} did not give results, usually this means that it is not formated correctly.") , input: id,  }));
         }
     }
 
@@ -217,26 +320,49 @@ pub struct Client<'a, T: EnsemblPostEndpoint + Send + DeserializeOwned> {
     )>,
     getter: std::marker::PhantomData<&'a Getter<T>>,
 }
-impl<'a, T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned> Client<'a, T> {
+impl<'a, T: 'static + EnsemblPostEndpoint + Send + DeserializeOwned + Clone> Client<'a, T> {
     /// Get the Ensembl response for the given identifier.
     /// Under the hood, this request will be bundled with other requests then returned asyncronously.
     /// # Panics
     ///
     /// Panics if the [Getter] has dropped, or the undelying channel has closed.
     pub async fn get(self, id: String) -> Result<T, EnsemblError> {
-        let (tx, rx) = tokio::sync::oneshot::channel();
+        let mut retries = 0;
+        let (mut tx, mut rx) = tokio::sync::oneshot::channel();
         if let Err(err) = self.tx.send((id.clone(), tx)).await {
             panic!(
                 "Getter was closed or dropped recieving request: {}",
                 err.0 .0
             )
         }; // If the channel has closed, we can ignore the result
-        match rx.await {
-            Ok(t) => t,
-            Err(e) => Err(EnsemblError {
-                input: id,
-                error: e.to_string(),
-            }),
+        loop {
+            match rx.await {
+                Ok(Ok(t)) => return Ok(t),
+                Ok(Err(e)) => {
+                    retries += 1;
+                    if retries < 3 && [403, 408, 429, 502, 503].contains(&e.status_code) {
+                        eprintln!("Error getting Ensembl data for {id}. Retry({retries})...\n{e}");
+                        (tx, rx) = tokio::sync::oneshot::channel();
+                        if let Err(err) = self.tx.send((id.clone(), tx)).await {
+                            panic!(
+                                "Getter was closed or dropped recieving request after {} retries: {}",
+                                retries,
+                                err.0 .0
+                            )
+                        };
+                        continue;
+                    } else {
+                        return Err(e);
+                    }
+                }
+                Err(e) => {
+                    return Err(EnsemblError {
+                        status_code: 0,
+                        input: id,
+                        error: e.to_string(),
+                    })
+                }
+            }
         }
     }
 }
@@ -265,6 +391,7 @@ pub struct EnsemblTopLevelError {
 #[derive(Debug, Error, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[error("Error accessing Ensembl data. Ensembl gave this response:\n{error}")]
 pub struct EnsemblError {
+    pub status_code: i16,
     pub input: String,
     pub error: String,
 }
